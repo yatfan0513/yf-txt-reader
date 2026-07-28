@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes" />
+    <title>📚 小說閱讀器</title>
+    <style>
+        /* ===== 全域重置 & 基礎 ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+            background: #f2f4f6;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            padding: 20px 16px 40px;
+        }
+
+        .app {
+            max-width: 860px;
+            width: 100%;
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-self: flex-start;
+        }
+
+        /* ===== 頂部標題 ===== */
+        .app-header {
+            padding: 18px 24px 10px 24px;
+            border-bottom: 1px solid #eaeef2;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .app-header .logo {
+            font-size: 22px;
+            font-weight: 600;
+            color: #1e2a3a;
+            letter-spacing: 0.5px;
+            user-select: none;
+        }
+        .app-header .logo span {
+            color: #4a7cf7;
+        }
+        .app-header .badge {
+            font-size: 12px;
+            color: #8899aa;
+            background: #f0f2f5;
+            padding: 2px 12px;
+            border-radius: 12px;
+            margin-left: 6px;
+            font-weight: 400;
+        }
+
+        /* ===== 控制區 ===== */
+        .controls {
+            padding: 14px 24px 18px 24px;
+            background: #f8fafc;
+            border-bottom: 1px solid #eaeef2;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .control-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px 14px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 6px 8px;
+        }
+
+        .control-group label {
+            font-size: 14px;
+            font-weight: 500;
+            color: #2c3e50;
+            white-space: nowrap;
+            user-select: none;
+        }
+
+        .control-group input[type="text"],
+        .control-group input[type="number"] {
+            height: 34px;
+            padding: 0 10px;
+            border: 1px solid #d0d7de;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #1e2a3a;
+            background: #ffffff;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            outline: none;
+            min-width: 60px;
+            max-width: 140px;
+            flex: 0 1 auto;
+        }
+        .control-group input[type="text"]:focus,
+        .control-group input[type="number"]:focus {
+            border-color: #4a7cf7;
+            box-shadow: 0 0 0 3px rgba(74, 124, 247, 0.12);
+        }
+        .control-group input[type="text"] {
+            min-width: 100px;
+            max-width: 160px;
+        }
+        .control-group input[type="number"] {
+            min-width: 56px;
+            max-width: 80px;
+            -moz-appearance: textfield;
+        }
+        .control-group input[type="number"]::-webkit-outer-spin-button,
+        .control-group input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .control-group .unit {
+            font-size: 14px;
+            color: #5a6b7c;
+            user-select: none;
+        }
+
+        .btn {
+            height: 34px;
+            padding: 0 16px;
+            border: 1px solid #d0d7de;
+            border-radius: 6px;
+            background: #ffffff;
+            color: #1e2a3a;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s, color 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap;
+            user-select: none;
+            line-height: 1;
+        }
+        .btn:hover {
+            background: #f0f4f9;
+            border-color: #b8c4d0;
+        }
+        .btn:active {
+            transform: scale(0.97);
+        }
+        .btn-primary {
+            background: #4a7cf7;
+            border-color: #4a7cf7;
+            color: #ffffff;
+        }
+        .btn-primary:hover {
+            background: #3a6ae0;
+            border-color: #3a6ae0;
+            color: #ffffff;
+        }
+        .btn-primary:active {
+            background: #2f5ac9;
+            border-color: #2f5ac9;
+        }
+        .btn-sm {
+            height: 30px;
+            padding: 0 12px;
+            font-size: 13px;
+        }
+
+        /* 顏色預覽小方塊 */
+        .color-preview {
+            width: 28px;
+            height: 28px;
+            border-radius: 4px;
+            border: 1px solid #d0d7de;
+            flex-shrink: 0;
+            transition: background 0.15s;
+            background: #ffffff;
+        }
+
+        /* ===== 當前閱讀狀態 ===== */
+        .reading-status {
+            padding: 6px 24px 0 24px;
+            font-size: 13px;
+            color: #5a6b7c;
+            min-height: 28px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .reading-status .book-name {
+            font-weight: 600;
+            color: #1e2a3a;
+        }
+        .reading-status .loading-dots::after {
+            content: "載入中";
+            animation: dots 1.2s steps(4, end) infinite;
+        }
+        @keyframes dots {
+            0% {
+                content: "載入中";
+            }
+            25% {
+                content: "載入中.";
+            }
+            50% {
+                content: "載入中..";
+            }
+            75% {
+                content: "載入中...";
+            }
+        }
+
+        /* ===== 正文閱讀區 ===== */
+        .reader {
+            padding: 28px 24px 40px 24px;
+            flex: 1;
+            min-height: 380px;
+            background: #ffffff;
+            transition: background 0.2s, color 0.2s;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .reader .book-title {
+            font-size: 26px;
+            font-weight: 700;
+            text-align: center;
+            padding-bottom: 18px;
+            margin-bottom: 22px;
+            border-bottom: 2px solid #eaeef2;
+            letter-spacing: 1px;
+        }
+
+        .reader .content {
+            font-size: 18px;
+            line-height: 1.8;
+            white-space: pre-wrap;
+            word-break: break-word;
+            transition: font-size 0.15s, color 0.2s;
+            font-family: "PingFang SC", "Microsoft YaHei", "Noto Serif SC", serif;
+        }
+
+        /* 書單展示樣式 */
+        .book-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 16px;
+            padding: 12px 0 20px;
+        }
+        .book-list .book-item {
+            background: #f7f9fc;
+            border-radius: 10px;
+            padding: 18px 8px;
+            text-align: center;
+            font-size: 16px;
+            font-weight: 500;
+            color: #1e2a3a;
+            border: 1px solid #eaeef2;
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s, transform 0.1s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+            user-select: none;
+            font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+        }
+        .book-list .book-item:hover {
+            background: #eef3fa;
+            border-color: #b8c8dd;
+        }
+        .book-list .book-item:active {
+            transform: scale(0.96);
+        }
+        .book-list .book-item .icon {
+            font-size: 28px;
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        .book-list-placeholder {
+            text-align: center;
+            color: #b0c0ce;
+            font-size: 16px;
+            padding: 60px 0;
+            font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+        }
+        .book-list-placeholder .hint {
+            margin-top: 12px;
+            font-size: 14px;
+        }
+
+        .reader .content.error {
+            color: #d0314e !important;
+            text-align: center;
+            padding: 60px 0;
+            font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+            font-size: 16px;
+        }
+        .reader .content.error::before {
+            content: "⚠️ ";
+        }
+
+        /* ===== 響應式 ===== */
+        @media (max-width: 640px) {
+            body {
+                padding: 12px 10px 30px;
+            }
+            .app {
+                border-radius: 12px;
+            }
+            .app-header {
+                padding: 14px 16px 8px 16px;
+            }
+            .app-header .logo {
+                font-size: 18px;
+            }
+            .app-header .badge {
+                font-size: 11px;
+                padding: 1px 10px;
+            }
+            .controls {
+                padding: 12px 16px 14px 16px;
+                gap: 10px;
+            }
+            .control-row {
+                gap: 8px 10px;
+            }
+            .control-group {
+                gap: 4px 6px;
+                flex-wrap: wrap;
+            }
+            .control-group label {
+                font-size: 13px;
+            }
+            .control-group input[type="text"],
+            .control-group input[type="number"] {
+                height: 32px;
+                font-size: 13px;
+                min-width: 50px;
+                max-width: 120px;
+                padding: 0 8px;
+            }
+            .control-group input[type="text"] {
+                min-width: 80px;
+                max-width: 130px;
+            }
+            .btn {
+                height: 32px;
+                padding: 0 12px;
+                font-size: 13px;
+            }
+            .btn-sm {
+                height: 28px;
+                padding: 0 10px;
+                font-size: 12px;
+            }
+            .color-preview {
+                width: 24px;
+                height: 24px;
+            }
+            .reader {
+                padding: 18px 14px 30px 14px;
+                min-height: 280px;
+            }
+            .reader .book-title {
+                font-size: 20px;
+                padding-bottom: 12px;
+                margin-bottom: 16px;
+            }
+            .reader .content {
+                font-size: 17px;
+                line-height: 1.8;
+            }
+            .book-list {
+                grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+                gap: 12px;
+            }
+            .book-list .book-item {
+                padding: 14px 6px;
+                font-size: 14px;
+            }
+            .book-list .book-item .icon {
+                font-size: 22px;
+            }
+            .reading-status {
+                padding: 4px 16px 0 16px;
+                font-size: 12px;
+                min-height: 24px;
+            }
+        }
+
+        @media (max-width: 420px) {
+            .control-group input[type="text"] {
+                min-width: 60px;
+                max-width: 100px;
+            }
+            .control-group input[type="number"] {
+                min-width: 44px;
+                max-width: 64px;
+            }
+            .btn {
+                padding: 0 10px;
+                font-size: 12px;
+                height: 30px;
+            }
+            .btn-sm {
+                padding: 0 8px;
+                font-size: 11px;
+                height: 26px;
+            }
+            .reader .content {
+                font-size: 15px;
+            }
+            .book-list {
+                grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+                gap: 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .control-row {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 8px;
+            }
+            .control-group {
+                flex-wrap: wrap;
+                justify-content: flex-start;
+            }
+            .control-group input[type="text"],
+            .control-group input[type="number"] {
+                flex: 1 1 auto;
+                min-width: 60px;
+                max-width: 100%;
+            }
+            .control-group input[type="text"] {
+                min-width: 80px;
+            }
+            .reading-status {
+                flex-wrap: wrap;
+            }
+        }
+
+        /* ===== 載入狀態 ===== */
+        .spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid #e0e6ed;
+            border-top-color: #4a7cf7;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            vertical-align: middle;
+            margin-right: 6px;
+        }
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* ===== 通用工具 ===== */
+        .hidden {
+            display: none !important;
+        }
+        .flex-center {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .text-ellipsis {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .gap-1 {
+            gap: 4px;
+        }
+        .gap-2 {
+            gap: 8px;
+        }
+        .mt-1 {
+            margin-top: 4px;
+        }
+        .mb-1 {
+            margin-bottom: 4px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app" role="main">
+        <!-- 頂部標題 -->
+        <header class="app-header">
+            <div class="logo">📚 小說<span>閱讀器</span></div>
+            <span class="badge">純前端 · 離線</span>
+        </header>
+
+        <!-- 控制區 -->
+        <section class="controls" aria-label="閱讀控制">
+            <!-- 第一行：書名 -->
+            <div class="control-row">
+                <div class="control-group">
+                    <label for="bookInput">書名：</label>
+                    <input type="text" id="bookInput" placeholder="輸入書名，例如 西遊記" value="" autocomplete="off" />
+                    <button class="btn btn-primary" id="readBtn">📖 閱讀</button>
+                </div>
+            </div>
+
+            <!-- 第二行：字體 + 背景 + 顏色 -->
+            <div class="control-row">
+                <!-- 字體大細 -->
+                <div class="control-group">
+                    <label for="fontSizeInput">字體大細：</label>
+                    <input type="number" id="fontSizeInput" value="18" min="12" max="40" step="1" />
+                    <span class="unit">px</span>
+                    <button class="btn btn-sm" id="fontApplyBtn">套用</button>
+                </div>
+
+                <!-- 背景顏色 -->
+                <div class="control-group">
+                    <label for="bgColorInput">背景顏色：</label>
+                    <input type="text" id="bgColorInput" value="#FFFFFF" maxlength="7" placeholder="#FFFFFF" />
+                    <span class="color-preview" id="bgColorPreview" style="background:#ffffff;"></span>
+                    <button class="btn btn-sm" id="bgApplyBtn">套用</button>
+                </div>
+
+                <!-- 字體顏色 -->
+                <div class="control-group">
+                    <label for="textColorInput">字體顏色：</label>
+                    <input type="text" id="textColorInput" value="#000000" maxlength="7" placeholder="#000000" />
+                    <span class="color-preview" id="textColorPreview" style="background:#000000;"></span>
+                    <button class="btn btn-sm" id="textApplyBtn">套用</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 閱讀狀態 -->
+        <div class="reading-status" id="readingStatus">
+            <span>📌 而家睇緊：</span>
+            <span class="book-name" id="currentBookName">—</span>
+            <span id="statusExtra"></span>
+        </div>
+
+        <!-- 正文閱讀區 -->
+        <section class="reader" id="reader">
+            <div class="book-title" id="bookTitle"></div>
+            <div class="content" id="bookContent"></div>
+        </section>
+    </div>
+
+    <script>
+        (function() {
+            'use strict';
+
+            // ===== DOM 引用 =====
+            const bookInput = document.getElementById('bookInput');
+            const readBtn = document.getElementById('readBtn');
+            const fontSizeInput = document.getElementById('fontSizeInput');
+            const fontApplyBtn = document.getElementById('fontApplyBtn');
+            const bgColorInput = document.getElementById('bgColorInput');
+            const bgApplyBtn = document.getElementById('bgApplyBtn');
+            const textColorInput = document.getElementById('textColorInput');
+            const textApplyBtn = document.getElementById('textApplyBtn');
+            const bgColorPreview = document.getElementById('bgColorPreview');
+            const textColorPreview = document.getElementById('textColorPreview');
+            const currentBookName = document.getElementById('currentBookName');
+            const statusExtra = document.getElementById('statusExtra');
+            const bookTitle = document.getElementById('bookTitle');
+            const bookContent = document.getElementById('bookContent');
+            const reader = document.getElementById('reader');
+
+            // ===== 預設值 =====
+            const DEFAULTS = {
+                fontSize: 18,
+                bgColor: '#FFFFFF',
+                textColor: '#000000',
+            };
+
+            // ===== 當前狀態 =====
+            let currentBook = '';
+            let isLoading = false;
+            let bookListData = [];
+
+            // ===== 工具函數 =====
+
+            function validateColor(color) {
+                if (!color) return null;
+                let c = color.trim();
+                if (/^#[0-9a-fA-F]{3}$|^#[0-9a-fA-F]{6}$/.test(c)) {
+                    return c;
+                }
+                if (/^[0-9a-fA-F]{6}$/.test(c)) {
+                    return '#' + c;
+                }
+                if (/^[0-9a-fA-F]{3}$/.test(c)) {
+                    return '#' + c;
+                }
+                return null;
+            }
+
+            function updateColorPreview(inputEl, previewEl) {
+                const val = inputEl.value.trim();
+                const valid = validateColor(val);
+                if (valid) {
+                    previewEl.style.background = valid;
+                } else {
+                    previewEl.style.background = '#f0f0f0';
+                }
+            }
+
+            function applyFontSize(size) {
+                const val = parseInt(size, 10);
+                if (isNaN(val) || val < 8 || val > 60) {
+                    fontSizeInput.value = DEFAULTS.fontSize;
+                    bookContent.style.fontSize = DEFAULTS.fontSize + 'px';
+                    return;
+                }
+                bookContent.style.fontSize = val + 'px';
+                fontSizeInput.value = val;
+            }
+
+            function applyBgColor(color) {
+                const valid = validateColor(color);
+                if (!valid) {
+                    bgColorInput.value = DEFAULTS.bgColor;
+                    reader.style.background = DEFAULTS.bgColor;
+                    bgColorPreview.style.background = DEFAULTS.bgColor;
+                    return;
+                }
+                reader.style.background = valid;
+                bgColorInput.value = valid;
+                bgColorPreview.style.background = valid;
+            }
+
+            function applyTextColor(color) {
+                const valid = validateColor(color);
+                if (!valid) {
+                    textColorInput.value = DEFAULTS.textColor;
+                    bookContent.style.color = DEFAULTS.textColor;
+                    bookTitle.style.color = DEFAULTS.textColor;
+                    textColorPreview.style.background = DEFAULTS.textColor;
+                    return;
+                }
+                bookContent.style.color = valid;
+                bookTitle.style.color = valid;
+                textColorInput.value = valid;
+                textColorPreview.style.background = valid;
+            }
+
+            function resetToDefaults() {
+                fontSizeInput.value = DEFAULTS.fontSize;
+                bookContent.style.fontSize = DEFAULTS.fontSize + 'px';
+
+                bgColorInput.value = DEFAULTS.bgColor;
+                reader.style.background = DEFAULTS.bgColor;
+                bgColorPreview.style.background = DEFAULTS.bgColor;
+
+                textColorInput.value = DEFAULTS.textColor;
+                bookContent.style.color = DEFAULTS.textColor;
+                bookTitle.style.color = DEFAULTS.textColor;
+                textColorPreview.style.background = DEFAULTS.textColor;
+            }
+
+            function showError(msg) {
+                bookTitle.textContent = '';
+                bookContent.textContent = msg;
+                bookContent.className = 'content error';
+                currentBookName.textContent = '—';
+                statusExtra.textContent = '';
+            }
+
+            function setLoading(loading) {
+                isLoading = loading;
+                if (loading) {
+                    readBtn.textContent = '⏳ 載入中';
+                    readBtn.disabled = true;
+                    statusExtra.innerHTML = '<span class="spinner"></span> 載入中...';
+                } else {
+                    readBtn.textContent = '📖 閱讀';
+                    readBtn.disabled = false;
+                    if (!currentBook) {
+                        statusExtra.textContent = '';
+                    } else {
+                        statusExtra.textContent = '✅ 已載入';
+                    }
+                }
+            }
+
+            function renderBookList(books) {
+                bookTitle.textContent = '📚 全部書目';
+                bookContent.className = 'content';
+                bookContent.innerHTML = '';
+                if (!books || books.length === 0) {
+                    bookContent.innerHTML = '<div class="book-list-placeholder">📭 暫無書目，請喺 content/booklist.csv 加入書名</div>';
+                    return;
+                }
+                const listDiv = document.createElement('div');
+                listDiv.className = 'book-list';
+                books.forEach(name => {
+                    const item = document.createElement('div');
+                    item.className = 'book-item';
+                    item.innerHTML = `<span class="icon">📖</span>${name}`;
+                    item.addEventListener('click', function() {
+                        bookInput.value = name;
+                        loadBook(name);
+                    });
+                    listDiv.appendChild(item);
+                });
+                bookContent.appendChild(listDiv);
+                currentBookName.textContent = '—';
+                statusExtra.textContent = '📋 撳書名開始睇';
+            }
+
+            async function loadBook(bookName) {
+                if (!bookName || !bookName.trim()) {
+                    showError('請輸入書名');
+                    return;
+                }
+                const name = bookName.trim();
+                if (/[\\/]|\.\./.test(name)) {
+                    showError('書名包含非法字元，請重新輸入');
+                    return;
+                }
+
+                const filePath = 'content/' + name + '.txt';
+
+                bookTitle.textContent = '';
+                bookContent.textContent = '';
+                bookContent.className = 'content';
+                currentBookName.textContent = name;
+                setLoading(true);
+
+                try {
+                    const response = await fetch(filePath, {
+                        method: 'GET',
+                        headers: { 'Accept': 'text/plain; charset=utf-8' },
+                    });
+
+                    if (!response.ok) {
+                        if (response.status === 404) {
+                            showError(`搵唔到呢本書「${name}」，請檢查書名是否正確`);
+                        } else {
+                            showError(`載入失敗 (HTTP ${response.status})，請稍後再試`);
+                        }
+                        setLoading(false);
+                        currentBook = '';
+                        currentBookName.textContent = '—';
+                        statusExtra.textContent = '';
+                        return;
+                    }
+
+                    const text = await response.text();
+                    if (!text.trim()) {
+                        showError(`「${name}」內容係空，請檢查檔案`);
+                        setLoading(false);
+                        currentBook = '';
+                        currentBookName.textContent = '—';
+                        statusExtra.textContent = '';
+                        return;
+                    }
+
+                    currentBook = name;
+                    bookTitle.textContent = '《' + name + '》';
+                    bookContent.textContent = text;
+                    bookContent.className = 'content';
+                    applyFontSize(fontSizeInput.value);
+                    applyBgColor(bgColorInput.value);
+                    applyTextColor(textColorInput.value);
+                    currentBookName.textContent = name;
+                    statusExtra.textContent = '✅ 已載入';
+                    setLoading(false);
+
+                } catch (err) {
+                    console.error('載入書籍出錯:', err);
+                    showError('網絡錯誤，請檢查網絡連線後再試');
+                    setLoading(false);
+                    currentBook = '';
+                    currentBookName.textContent = '—';
+                    statusExtra.textContent = '';
+                }
+            }
+
+            async function loadBookListFromCSV() {
+                try {
+                    const response = await fetch('content/booklist.csv', {
+                        method: 'GET',
+                        headers: { 'Accept': 'text/csv; charset=utf-8' },
+                    });
+                    if (!response.ok) {
+                        bookTitle.textContent = '';
+                        bookContent.innerHTML = `
+                            <div class="book-list-placeholder">
+                                📭 搵唔到書單檔案 (content/booklist.csv)<br/>
+                                <span class="hint">請建立該檔案，每行一個書名（唔包 .txt）</span>
+                            </div>
+                        `;
+                        bookContent.className = 'content';
+                        currentBookName.textContent = '—';
+                        statusExtra.textContent = '';
+                        return;
+                    }
+                    const csvText = await response.text();
+                    const lines = csvText.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0);
+                    let books = lines;
+                    if (lines.length > 0) {
+                        const first = lines[0].toLowerCase();
+                        if (first.includes('書名') || first.includes('book') || first.includes('名稱') || first.includes('name')) {
+                            books = lines.slice(1);
+                        }
+                    }
+                    books = books.filter(name => name.length > 0);
+                    bookListData = books;
+                    if (books.length === 0) {
+                        bookContent.innerHTML = `
+                            <div class="book-list-placeholder">
+                                📭 書單係空，請喺 content/booklist.csv 加入書名（每行一個）
+                            </div>
+                        `;
+                        bookContent.className = 'content';
+                        bookTitle.textContent = '';
+                        currentBookName.textContent = '—';
+                        statusExtra.textContent = '';
+                    } else {
+                        renderBookList(books);
+                    }
+                } catch (err) {
+                    console.error('載入書單CSV失敗:', err);
+                    bookContent.innerHTML = `
+                        <div class="book-list-placeholder">
+                            ⚠️ 載入書單失敗，請檢查網絡或檔案格式<br/>
+                            <span class="hint">確保 content/booklist.csv 存在且格式正確（每行一個書名）</span>
+                        </div>
+                    `;
+                    bookContent.className = 'content';
+                    bookTitle.textContent = '';
+                    currentBookName.textContent = '—';
+                    statusExtra.textContent = '';
+                }
+            }
+
+            // ===== 事件綁定 =====
+
+            readBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const val = bookInput.value.trim();
+                if (val) {
+                    loadBook(val);
+                } else {
+                    showError('請輸入書名');
+                }
+            });
+
+            bookInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    readBtn.click();
+                }
+            });
+
+            fontApplyBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                applyFontSize(fontSizeInput.value);
+            });
+
+            fontSizeInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    applyFontSize(fontSizeInput.value);
+                }
+            });
+
+            bgApplyBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                applyBgColor(bgColorInput.value);
+                updateColorPreview(bgColorInput, bgColorPreview);
+            });
+
+            bgColorInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    applyBgColor(bgColorInput.value);
+                    updateColorPreview(bgColorInput, bgColorPreview);
+                }
+            });
+
+            bgColorInput.addEventListener('input', function() {
+                updateColorPreview(bgColorInput, bgColorPreview);
+            });
+
+            textApplyBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                applyTextColor(textColorInput.value);
+                updateColorPreview(textColorInput, textColorPreview);
+            });
+
+            textColorInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    applyTextColor(textColorInput.value);
+                    updateColorPreview(textColorInput, textColorPreview);
+                }
+            });
+
+            textColorInput.addEventListener('input', function() {
+                updateColorPreview(textColorInput, textColorPreview);
+            });
+
+            // ===== 初始化 =====
+            function init() {
+                resetToDefaults();
+                updateColorPreview(bgColorInput, bgColorPreview);
+                updateColorPreview(textColorInput, textColorPreview);
+
+                bookContent.textContent = '';
+                bookContent.className = 'content';
+                bookTitle.textContent = '';
+                currentBookName.textContent = '—';
+                statusExtra.textContent = '📋 正在載入書單...';
+
+                loadBookListFromCSV();
+
+                const params = new URLSearchParams(window.location.search);
+                const bookParam = params.get('book');
+                if (bookParam) {
+                    bookInput.value = bookParam;
+                    loadBook(bookParam);
+                }
+
+                if (!bookParam) {
+                    bookInput.focus();
+                }
+            }
+
+            if (document.readyState === 'complete') {
+                init();
+            } else {
+                window.addEventListener('load', init);
+            }
+
+            window.__reader = {
+                loadBook,
+                loadBookListFromCSV,
+                resetToDefaults,
+                applyFontSize,
+                applyBgColor,
+                applyTextColor,
+                renderBookList,
+            };
+
+        })();
+    </script>
+
+</body>
+</html>
