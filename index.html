@@ -497,6 +497,100 @@
         .mb-1 {
             margin-bottom: 4px;
         }
+    
+        /* ===== 回到頂部按鈕 ===== */
+        .back-to-top {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: #4a7cf7;
+            color: #ffffff;
+            border: none;
+            box-shadow: 0 4px 14px rgba(74, 124, 247, 0.35);
+            font-size: 22px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s, transform 0.2s, opacity 0.3s;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 9999;
+        }
+        .back-to-top.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .back-to-top:hover {
+            background: #3a6ae0;
+            transform: scale(1.08);
+        }
+        .back-to-top:active {
+            transform: scale(0.95);
+        }
+
+        /* ===== 搜尋列 ===== */
+        .search-bar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px 10px;
+            padding: 10px 24px 14px 24px;
+            background: #f0f4f9;
+            border-bottom: 1px solid #d8e0e8;
+        }
+        .search-bar .search-input {
+            height: 32px;
+            padding: 0 10px;
+            border: 1px solid #c0c8d0;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #1e2a3a;
+            background: #ffffff;
+            outline: none;
+            min-width: 120px;
+            max-width: 200px;
+            flex: 0 1 auto;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .search-input:focus {
+            border-color: #4a7cf7;
+            box-shadow: 0 0 0 3px rgba(74, 124, 247, 0.12);
+        }
+        .search-bar .btn {
+            height: 32px;
+            padding: 0 12px;
+            font-size: 13px;
+        }
+        .search-status {
+            font-size: 13px;
+            color: #5a6b7c;
+            white-space: nowrap;
+            user-select: none;
+        }
+        .search-status .count {
+            font-weight: 600;
+            color: #4a7cf7;
+        }
+        .search-status .error {
+            color: #d0314e;
+        }
+
+        /* ===== 搜尋高亮 ===== */
+        .search-highlight {
+            background: #ffe066;
+            color: #1e2a3a;
+            border-radius: 2px;
+            padding: 1px 2px;
+            box-shadow: 0 0 0 1px rgba(255, 224, 102, 0.5);
+        }
+        .search-highlight.current {
+            background: #ffb020;
+            box-shadow: 0 0 0 2px rgba(255, 176, 32, 0.6);
+        }
     </style>
 </head>
 <body>
@@ -547,6 +641,19 @@
             </div>
         </section>
 
+        
+        <!-- 搜尋列 -->
+        <section class="search-bar" aria-label="搜尋">
+            <div class="control-group">
+                <label for="searchInput" style="font-size:14px;font-weight:500;color:#2c3e50;">搜尋：</label>
+                <input type="text" id="searchInput" class="search-input" placeholder="輸入關鍵字..." autocomplete="off" />
+            </div>
+            <button class="btn btn-sm" id="searchBtn">🔍 搜尋</button>
+            <button class="btn btn-sm" id="prevBtn">⬆️ 上一個</button>
+            <button class="btn btn-sm" id="nextBtn">⬇️ 下一個</button>
+            <button class="btn btn-sm" id="clearSearchBtn">❌ 清除</button>
+            <span class="search-status" id="searchStatus"></span>
+        </section>
         <!-- 閱讀狀態 -->
         <div class="reading-status" id="readingStatus">
             <span>📌 而家睇緊：</span>
@@ -560,6 +667,9 @@
             <div class="content" id="bookContent"></div>
         </section>
     </div>
+
+    <!-- 回到頂部按鈕 -->
+    <button class="back-to-top" id="backToTopBtn" title="回到最上方">⬆</button>
 
     <script>
         (function() {
@@ -581,6 +691,15 @@
             const bookTitle = document.getElementById('bookTitle');
             const bookContent = document.getElementById('bookContent');
             const reader = document.getElementById('reader');
+            // ===== 搜尋 & 回到頂部 DOM 引用 =====
+            const searchInput = document.getElementById('searchInput');
+            const searchBtn = document.getElementById('searchBtn');
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const clearSearchBtn = document.getElementById('clearSearchBtn');
+            const searchStatus = document.getElementById('searchStatus');
+            const backToTopBtn = document.getElementById('backToTopBtn');
+
 
             // ===== 預設值 =====
             const DEFAULTS = {
@@ -593,6 +712,8 @@
             let currentBook = '';
             let isLoading = false;
             let bookListData = [];
+            let currentHighlightIndex = -1;
+            let highlightSpans = [];
 
             // ===== 工具函數 =====
 
@@ -918,6 +1039,163 @@
                 updateColorPreview(textColorInput, textColorPreview);
             });
 
+
+
+            // ===== 搜尋 & 回到頂部 事件綁定 =====
+            searchBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                performSearch();
+            });
+            searchInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    performSearch();
+                }
+            });
+            prevBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                prevMatch();
+            });
+            nextBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                nextMatch();
+            });
+            clearSearchBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                clearSearch();
+            });
+            backToTopBtn.addEventListener('click', scrollToTop);
+            window.addEventListener('scroll', toggleBackToTop);
+
+            // ===== 搜尋功能 =====
+            // 將文字中的關鍵字轉義，避免特殊字元導致正則錯誤
+            function escapeRegExp(str) {
+                return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            }
+
+            // 搜尋並高亮所有匹配的文字
+            function performSearch() {
+                const keyword = searchInput.value.trim();
+                if (!keyword) {
+                    clearSearch();
+                    showSearchStatus('請輸入搜尋關鍵字', true);
+                    return;
+                }
+
+                // 取得原始文字內容
+                const originalText = bookContent.textContent;
+                if (!originalText) {
+                    showSearchStatus('沒有可搜尋的內容', true);
+                    return;
+                }
+
+                const escapedKeyword = escapeRegExp(keyword);
+                const regex = new RegExp('(' + escapedKeyword + ')', 'gi');
+                const matches = originalText.match(regex);
+
+                if (!matches || matches.length === 0) {
+                    showSearchStatus('找不到「' + keyword + '」', true);
+                    return;
+                }
+
+                // 用 <mark> 標籤包裝匹配的文字
+                const highlightedHTML = originalText.replace(regex, function(match) {
+                    return '<mark class="search-highlight current" data-index="0">' + match + '</mark>';
+                });
+
+                bookContent.innerHTML = highlightedHTML;
+                currentHighlightIndex = 0;
+
+                // 收集所有高亮元素
+                highlightSpans = bookContent.querySelectorAll('.search-highlight');
+
+                // 顯示搜尋結果
+                showSearchStatus('找到 ' + matches.length + ' 個匹配，目前為第 ' + (currentHighlightIndex + 1) + ' 個');
+
+                // 滾動到第一個匹配
+                scrollToCurrentHighlight();
+            }
+
+            // 滾動到當前高亮元素
+            function scrollToCurrentHighlight() {
+                if (highlightSpans.length === 0) return;
+                const el = highlightSpans[currentHighlightIndex];
+                if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+
+            // 跳到上一個匹配
+            function prevMatch() {
+                if (highlightSpans.length === 0) {
+                    showSearchStatus('請先進行搜尋', true);
+                    return;
+                }
+                // 移除當前高亮
+                highlightSpans[currentHighlightIndex].classList.remove('current');
+                // 計算上一個索引
+                currentHighlightIndex = (currentHighlightIndex - 1 + highlightSpans.length) % highlightSpans.length;
+                // 添加新高亮
+                highlightSpans[currentHighlightIndex].classList.add('current');
+                showSearchStatus('找到 ' + highlightSpans.length + ' 個匹配，目前為第 ' + (currentHighlightIndex + 1) + ' 個');
+                scrollToCurrentHighlight();
+            }
+
+            // 跳到下一個匹配
+            function nextMatch() {
+                if (highlightSpans.length === 0) {
+                    showSearchStatus('請先進行搜尋', true);
+                    return;
+                }
+                // 移除當前高亮
+                highlightSpans[currentHighlightIndex].classList.remove('current');
+                // 計算下一個索引
+                currentHighlightIndex = (currentHighlightIndex + 1) % highlightSpans.length;
+                // 添加新高亮
+                highlightSpans[currentHighlightIndex].classList.add('current');
+                showSearchStatus('找到 ' + highlightSpans.length + ' 個匹配，目前為第 ' + (currentHighlightIndex + 1) + ' 個');
+                scrollToCurrentHighlight();
+            }
+
+            // 清除搜尋高亮
+            function clearSearch() {
+                const originalText = bookContent.textContent;
+                bookContent.innerHTML = '';
+                if (originalText) {
+                    bookContent.textContent = originalText;
+                }
+                currentHighlightIndex = -1;
+                highlightSpans = [];
+                searchInput.value = '';
+                showSearchStatus('');
+            }
+
+            // 顯示搜尋狀態訊息
+            function showSearchStatus(message, isError) {
+                if (!message) {
+                    searchStatus.innerHTML = '';
+                    return;
+                }
+                if (isError) {
+                    searchStatus.innerHTML = '<span class="error">' + message + '</span>';
+                } else {
+                    searchStatus.innerHTML = message;
+                }
+            }
+
+            // ===== 回到頂部功能 =====
+            function toggleBackToTop() {
+                if (window.scrollY > 300) {
+                    backToTopBtn.classList.add('visible');
+                } else {
+                    backToTopBtn.classList.remove('visible');
+                }
+            }
+
+            function scrollToTop() {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+
             // ===== 初始化 =====
             function init() {
                 resetToDefaults();
@@ -942,6 +1220,7 @@
                 if (!bookParam) {
                     bookInput.focus();
                 }
+                toggleBackToTop();
             }
 
             if (document.readyState === 'complete') {
@@ -958,6 +1237,11 @@
                 applyBgColor,
                 applyTextColor,
                 renderBookList,
+                performSearch,
+                prevMatch,
+                nextMatch,
+                clearSearch,
+                scrollToTop,
             };
 
         })();
