@@ -13,8 +13,9 @@
   --mute:color-mix(in srgb,var(--fg) 55%,var(--bg));
   --line:color-mix(in srgb,var(--fg) 14%,var(--bg));
   --soft:color-mix(in srgb,var(--fg) 6%,var(--bg));
-  --tbh:52px;
+  --tbh:52px; --pad:clamp(22px,6vw,72px);
 }
+html{background:var(--bg)}
 *{margin:0;padding:0;box-sizing:border-box}
 html{scroll-padding-top:calc(var(--tbh) + 70px)}
 body{background:var(--bg);color:var(--fg);font-family:var(--ui);min-height:100vh;transition:background .25s,color .25s;-webkit-text-size-adjust:100%}
@@ -26,7 +27,7 @@ button{cursor:pointer;background:none;border:0}
 /* 頂欄 */
 #top{position:fixed;inset:0 0 auto 0;height:var(--tbh);padding:0 max(12px,env(safe-area-inset-right)) 0 max(12px,env(safe-area-inset-left));
   display:flex;align-items:center;gap:8px;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
-  border-bottom:1px solid var(--line);z-index:20;transition:transform .3s}
+  z-index:20;transition:transform .3s}
 #top.hide{transform:translateY(-100%)}
 #topTitle{flex:1;text-align:center;font-size:15px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #pct{font-size:13px;color:var(--mute);min-width:2.6em;text-align:right;font-variant-numeric:tabular-nums}
@@ -46,8 +47,8 @@ body[data-view=list] .bookonly{display:none}
 .ib:hover{background:var(--soft)}
 
 /* 正文 */
-main{width:min(40em,calc(100vw - 40px));margin:0 auto;padding:calc(var(--tbh) + 56px) 0 160px}
-body[data-view=list] main{width:min(720px,calc(100vw - 40px))}
+main{width:100%;max-width:calc(var(--fs)*40 + var(--pad)*2);margin:0 auto;padding:calc(var(--tbh) + 56px) var(--pad) 160px}
+body[data-view=list] main{max-width:calc(720px + var(--pad)*2)}
 h1{font-family:var(--ff);font-size:clamp(26px,5vw,42px);font-weight:700;text-align:center;letter-spacing:.08em;margin-bottom:64px}
 #bookContent{font-family:var(--ff);font-size:var(--fs);line-height:var(--lh);white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere}
 mark{background:#FFD54A;color:#111;border-radius:3px;padding:0 1px}
@@ -65,11 +66,12 @@ mark.cur{background:#FF9F1A;outline:2px solid #FF9F1A}
 #listHead span{color:var(--mute);font-family:var(--ui);font-size:15px}
 
 /* 浮動按鈕 */
-.fab{position:fixed;bottom:max(20px,env(safe-area-inset-bottom));height:48px;border-radius:24px;background:var(--fg);color:var(--bg);
-  box-shadow:0 6px 20px rgba(0,0,0,.22);z-index:18;font-size:15px;transition:transform .15s,opacity .25s}
-.fab:active{transform:scale(.95)}
-#menuBtn{left:max(20px,env(safe-area-inset-left));padding:0 20px 0 18px;display:flex;align-items:center;gap:8px}
-#menuBtn i{font-style:normal;font-family:var(--ff);font-weight:700;font-size:17px}
+.fab,#dock button{height:48px;border-radius:24px;background:var(--fg);color:var(--bg);box-shadow:0 6px 20px rgba(0,0,0,.22);font-size:15px;transition:transform .15s,opacity .25s}
+.fab{position:fixed;bottom:max(20px,env(safe-area-inset-bottom));z-index:18}
+.fab:active,#dock button:active{transform:scale(.95)}
+#dock{position:fixed;left:max(20px,env(safe-area-inset-left));bottom:max(20px,env(safe-area-inset-bottom));display:flex;gap:8px;z-index:18}
+#dock button{padding:0 20px;display:flex;align-items:center;gap:8px}
+#dock i{font-style:normal;font-family:var(--ff);font-weight:700;font-size:17px}
 #topBtn{right:max(20px,env(safe-area-inset-right));width:48px;font-size:20px;opacity:0;pointer-events:none}
 #topBtn.show{opacity:1;pointer-events:auto}
 
@@ -98,16 +100,21 @@ input[type=range]{flex:1;min-width:0;accent-color:var(--fg);height:30px}
 .seg button,.pre button{height:42px;border-radius:10px;border:1px solid var(--line);font-size:15px}
 .seg button[aria-pressed=true]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
 .pre button[aria-pressed=true]{outline:2px solid var(--fg);outline-offset:2px}
-.cols{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.cols .line{justify-content:space-between;border:1px solid var(--line);border-radius:10px;padding:6px 6px 6px 14px;font-size:15px}
-input[type=color]{width:44px;height:32px;border:0;border-radius:6px;background:none;padding:0;cursor:pointer}
+.cl{display:grid;grid-template-columns:2.5em 1fr 48px;align-items:center;gap:10px;margin-top:10px;font-size:15px}
+.hex{height:42px;min-width:0;padding:0 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);font-size:16px;font-family:ui-monospace,Menlo,Consolas,monospace;text-transform:uppercase}
+.hex:focus{outline:2px solid var(--fg);outline-offset:-1px}
+.hex.bad{border-color:#D0314E}
+.hint{font-size:13px;color:var(--mute);margin-top:10px}
+input[type=color]{width:48px;height:42px;border:1px solid var(--line);border-radius:10px;background:none;padding:3px;cursor:pointer}
+.sheet .books button{font-size:19px;padding:16px 4px;display:flex;justify-content:space-between;align-items:center}
+.books button[aria-current=true]{font-weight:700}
+.books button[aria-current=true]::after{content:"閱讀中";font-family:var(--ui);font-size:13px;font-weight:400;color:var(--mute)}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body data-view="list">
 
 <header id="top">
-  <button class="tb" id="listBtn" hidden>‹ 書目</button>
   <div id="topTitle">書目</div>
   <span id="pct" class="bookonly"></span>
   <button class="tb bookonly" id="searchBtn">搜尋</button>
@@ -128,7 +135,7 @@ input[type=color]{width:44px;height:32px;border:0;border-radius:6px;background:n
   <div id="bookContent"></div>
 </main>
 
-<button class="fab" id="menuBtn" aria-haspopup="dialog"><i>Aa</i>設定</button>
+<div id="dock"><button id="libBtn" aria-haspopup="dialog">書目</button><button id="menuBtn" aria-haspopup="dialog"><i>Aa</i>設定</button></div>
 <button class="fab" id="topBtn" aria-label="回到頂部">↑</button>
 
 <div class="overlay" id="overlay">
@@ -154,7 +161,7 @@ input[type=color]{width:44px;height:32px;border:0;border-radius:6px;background:n
     </div>
 
     <div class="row">
-      <label for="lhRange">行距</label>
+      <label for="lhRange">行距　<b id="lhVal" style="color:var(--fg)"></b></label>
       <div class="line"><input type="range" id="lhRange" min="1.3" max="2.8" step="0.1" /></div>
     </div>
 
@@ -169,13 +176,19 @@ input[type=color]{width:44px;height:32px;border:0;border-radius:6px;background:n
     <div class="row">
       <div class="lb">配色</div>
       <div class="pre" id="presets"></div>
-      <div class="cols" style="margin-top:12px">
-        <div class="line"><span>背景</span><input type="color" id="bgColor" aria-label="背景顏色" /></div>
-        <div class="line"><span>文字</span><input type="color" id="fgColor" aria-label="文字顏色" /></div>
-      </div>
+      <div class="cl"><span>背景</span><input class="hex" id="bgHex" maxlength="7" placeholder="#FFFFFF" spellcheck="false" autocomplete="off" aria-label="背景顏色色碼" /><input type="color" id="bgColor" aria-label="選擇背景顏色" /></div>
+      <div class="cl"><span>文字</span><input class="hex" id="fgHex" maxlength="7" placeholder="#1B1D21" spellcheck="false" autocomplete="off" aria-label="文字顏色色碼" /><input type="color" id="fgColor" aria-label="選擇文字顏色" /></div>
+      <p class="hint">可直接輸入 6 位色碼，例如 1B1D21</p>
     </div>
 
     <div class="row" style="padding-bottom:0"><button class="btn" id="resetBtn" style="width:100%">恢復預設</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="libOverlay">
+  <div class="sheet" role="dialog" aria-modal="true" aria-label="書目">
+    <div class="sh"><b>書目 <small id="libCount" style="color:var(--mute);font-weight:400;font-size:14px"></small></b><button class="ib" id="libClose" aria-label="關閉">✕</button></div>
+    <div id="libBody"></div>
   </div>
 </div>
 
@@ -186,7 +199,7 @@ const $ = id => document.getElementById(id);
 const root = document.documentElement;
 const bookInput = $('bookInput'), bookTitle = $('bookTitle'), bookContent = $('bookContent');
 const listHead = $('listHead'), listCount = $('listCount'), topTitle = $('topTitle');
-const readBtn = $('readBtn'), listBtn = $('listBtn'), overlay = $('overlay');
+const readBtn = $('readBtn'), overlay = $('overlay'), libOverlay = $('libOverlay');
 const sbar = $('sbar'), sInput = $('sInput'), sCount = $('sCount'), topBar = $('top');
 
 /* ===== 本地儲存（只存閱讀偏好與進度） ===== */
@@ -222,7 +235,9 @@ function applyAll(keepPos) {
   root.style.setProperty('--ff', FONTS[S.ff] || FONTS.serif);
   $('themeColor').content = S.bg;
   $('fsRange').value = S.fs; $('fsNum').value = S.fs; $('lhRange').value = S.lh;
+  $('lhVal').textContent = Number(S.lh).toFixed(1);
   $('bgColor').value = S.bg.toLowerCase(); $('fgColor').value = S.fg.toLowerCase();
+  [['bgHex', S.bg], ['fgHex', S.fg]].forEach(([id, c]) => { const el = $(id); if (document.activeElement !== el) { el.value = c.toUpperCase(); el.classList.remove('bad'); } });
   document.querySelectorAll('#ffSeg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.ff === S.ff));
   document.querySelectorAll('#presets button').forEach((b, i) =>
     b.setAttribute('aria-pressed', PRESETS[i].bg.toLowerCase() === S.bg.toLowerCase() && PRESETS[i].fg.toLowerCase() === S.fg.toLowerCase()));
@@ -244,6 +259,19 @@ $('fsPlus').addEventListener('click', () => setFs(S.fs + 1));
 $('lhRange').addEventListener('input', e => { S.lh = parseFloat(e.target.value); applyAll(true); });
 $('bgColor').addEventListener('input', e => { S.bg = e.target.value; applyAll(); });
 $('fgColor').addEventListener('input', e => { S.fg = e.target.value; applyAll(); });
+function hexInput(id, key) {
+  const el = $(id);
+  el.addEventListener('input', () => {
+    const v = el.value.trim();
+    const m = /^#?([0-9a-fA-F]{6}|[0-9a-fA-F]{3})$/.exec(v);
+    el.classList.toggle('bad', !m && v !== '');
+    if (!m) return;
+    let h = m[1]; if (h.length === 3) h = h.replace(/./g, '$&$&');
+    S[key] = '#' + h.toUpperCase(); applyAll();
+  });
+  el.addEventListener('blur', () => { el.value = S[key].toUpperCase(); el.classList.remove('bad'); });
+}
+hexInput('bgHex', 'bg'); hexInput('fgHex', 'fg');
 $('ffSeg').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { S.ff = b.dataset.ff; applyAll(true); } });
 $('resetBtn').addEventListener('click', () => { S = Object.assign({}, DEF); applyAll(true); });
 
@@ -259,7 +287,6 @@ let currentBook = '', rawText = '', bookListData = [];
 
 function setView(v) {
   document.body.dataset.view = v;
-  listBtn.hidden = v === 'list';
   listHead.hidden = v !== 'list';
   closeSearch();
   topBar.classList.remove('hide');
@@ -280,6 +307,18 @@ function showError(msg) {
 }
 
 /* ===== 書目 ===== */
+function buildList(books) {
+  const ul = document.createElement('ul');
+  ul.className = 'books';
+  books.forEach(name => {
+    const li = document.createElement('li'), b = document.createElement('button');
+    b.textContent = name;
+    if (name === currentBook) b.setAttribute('aria-current', 'true');
+    b.addEventListener('click', () => { closeLib(); bookInput.value = name; if (name !== currentBook) loadBook(name); });
+    li.appendChild(b); ul.appendChild(li);
+  });
+  return ul;
+}
 function renderBookList(books) {
   currentBook = ''; rawText = '';
   setView('list');
@@ -288,16 +327,7 @@ function renderBookList(books) {
   $('pct').textContent = '';
   listCount.textContent = books.length ? books.length + ' 本' : '';
   bookContent.innerHTML = '';
-  const ul = document.createElement('ul');
-  ul.className = 'books';
-  books.forEach(name => {
-    const li = document.createElement('li');
-    const b = document.createElement('button');
-    b.textContent = name;
-    b.addEventListener('click', () => { bookInput.value = name; loadBook(name); });
-    li.appendChild(b); ul.appendChild(li);
-  });
-  bookContent.appendChild(ul);
+  bookContent.appendChild(buildList(books));
   scrollTo(0, 0);
 }
 
@@ -308,7 +338,7 @@ async function loadBook(bookName) {
   if (/[\\/]|\.\./.test(name)) { showError('書名包含非法字元，請重新輸入'); return; }
   const filePath = 'content/' + name + '.txt';
 
-  closeMenu();
+  closeMenu(); closeLib();
   bookTitle.hidden = true;
   setView('book');
   topTitle.textContent = name;
@@ -366,10 +396,20 @@ async function loadBookListFromCSV() {
   }
 }
 
-/* 返回書目 */
-listBtn.addEventListener('click', () => {
-  if (bookListData.length) renderBookList(bookListData); else loadBookListFromCSV();
-});
+/* 書目彈窗：隨時查看所有書，不離開正在讀的書 */
+function openLib() {
+  const body = $('libBody');
+  body.innerHTML = '';
+  if (bookListData.length) body.appendChild(buildList(bookListData));
+  else { const d = document.createElement('div'); d.className = 'note'; d.style.padding = '40px 0'; d.textContent = '書單未能載入，或書單是空的'; body.appendChild(d); }
+  $('libCount').textContent = bookListData.length ? bookListData.length + ' 本' : '';
+  libOverlay.classList.add('open'); document.body.style.overflow = 'hidden';
+  const c = body.querySelector('[aria-current]'); if (c) c.scrollIntoView({ block: 'center' });
+}
+function closeLib() { libOverlay.classList.remove('open'); if (!overlay.classList.contains('open')) document.body.style.overflow = ''; }
+$('libBtn').addEventListener('click', openLib);
+$('libClose').addEventListener('click', closeLib);
+libOverlay.addEventListener('click', e => { if (e.target === libOverlay) closeLib(); });
 readBtn.addEventListener('click', () => loadBook(bookInput.value));
 bookInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); loadBook(bookInput.value); } });
 
@@ -448,7 +488,8 @@ $('topBtn').addEventListener('click', () => scrollTo({ top: 0, behavior: 'smooth
 /* ===== 鍵盤 ===== */
 addEventListener('keydown', e => {
   if (e.key === 'Escape') {
-    if (overlay.classList.contains('open')) closeMenu();
+    if (libOverlay.classList.contains('open')) closeLib();
+    else if (overlay.classList.contains('open')) closeMenu();
     else if (sbar.classList.contains('open')) closeSearch();
   }
 });
