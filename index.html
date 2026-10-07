@@ -6,195 +6,137 @@
 <meta name="theme-color" content="#FFFFFF" id="themeColor" />
 <title>小說閱讀器</title>
 <style>
+/* 相容 Chrome 78 WebView：不使用 flex gap / min() / max() / clamp() / color-mix / inset / aspect-ratio */
 :root{
-  --bg:#FFFFFF; --fg:#1B1D21; --fs:20px; --lh:1.9;
+  --bg:#FFFFFF;--fg:#1B1D21;--fs:20px;--lh:1.9;
   --ff:"Noto Serif TC","Noto Serif HK","Source Han Serif TC","Songti TC","PMingLiU","MingLiU",serif;
   --ui:-apple-system,"PingFang HK","PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;
-  /* 由 JS 依 --fg / --bg 即時計算（相容不支援 color-mix 的瀏覽器） */
-  --mute:#7C7E82; --line:#E0E1E3; --soft:#F0F0F1; --bg-rgb:255,255,255;
-  --tbh:52px; --pad:22px;
+  --mute:#7C7E82;--line:#E0E1E3;--soft:#F0F0F1;--bg-rgb:255,255,255;--tbh:52px;--pad:22px;
 }
 html{background:var(--bg);scroll-padding-top:calc(var(--tbh) + 70px)}
 *{margin:0;padding:0;box-sizing:border-box}
-body{
-  background:var(--bg);color:var(--fg);font-family:var(--ui);min-height:100vh;
-  transition:background .25s,color .25s;-webkit-text-size-adjust:100%;
-  -webkit-tap-highlight-color:transparent;
-}
+body{background:var(--bg);color:var(--fg);font-family:var(--ui);min-height:100vh;overflow-anchor:none;
+  transition:background .25s,color .25s;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
 button,input{font:inherit;color:inherit}
 button{cursor:pointer;background:none;border:0;touch-action:manipulation}
-:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
 [hidden]{display:none!important}
 
-/* ---------- 頂欄 ---------- */
-#top{
-  position:fixed;top:0;left:0;right:0;height:var(--tbh);z-index:20;
-  padding:0 12px;
-  padding-left:calc(12px + env(safe-area-inset-left));
-  padding-right:calc(12px + env(safe-area-inset-right));
-  display:-webkit-box;display:-webkit-flex;display:flex;
-  -webkit-align-items:center;align-items:center;
-  gap:8px;
-  background:rgba(var(--bg-rgb),.88);
-  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
-  transition:-webkit-transform .3s,transform .3s;
-}
-#top.hide{-webkit-transform:translateY(-100%);transform:translateY(-100%)}
-#topTitle{flex:1;-webkit-flex:1;text-align:center;font-size:15px;color:var(--mute);
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#pct{font-size:13px;color:var(--mute);min-width:2.6em;text-align:right;
-  font-variant-numeric:tabular-nums}
-.tb{height:34px;padding:0 14px;border-radius:17px;font-size:14px}
-.tb:hover{background:var(--soft)}
-#bar{position:absolute;left:0;bottom:-1px;height:2px;width:100%;background:var(--fg);
-  -webkit-transform:scaleX(0);transform:scaleX(0);
-  -webkit-transform-origin:left;transform-origin:left}
+/* 頂欄 */
+#top{position:fixed;top:0;left:0;right:0;height:var(--tbh);z-index:20;display:flex;align-items:center;
+  padding:0 12px;padding-left:calc(12px + env(safe-area-inset-left));padding-right:calc(12px + env(safe-area-inset-right));
+  background:rgba(var(--bg-rgb),.94);transition:transform .3s}
+#top.hide{transform:translateY(-100%)}
+#top>.tb{margin-left:8px}
+#topTitle{flex:1;text-align:center;font-size:15px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#pct{font-size:13px;color:var(--mute);min-width:2.6em;text-align:right;font-variant-numeric:tabular-nums}
+.tb{height:36px;padding:0 14px;border-radius:18px;font-size:14px}
+.tb:active,.ib:active{background:var(--soft)}
+#bar{position:absolute;left:0;bottom:0;height:2px;width:100%;background:var(--fg);transform:scaleX(0);transform-origin:left}
 body[data-view=list] .bookonly{display:none}
 
-/* ---------- 搜尋列 ---------- */
-#sbar{
-  position:fixed;top:var(--tbh);left:50%;width:calc(100% - 20px);max-width:560px;
-  margin-top:8px;z-index:19;
-  -webkit-transform:translate(-50%,-12px);transform:translate(-50%,-12px);
-  display:-webkit-box;display:-webkit-flex;display:flex;
-  -webkit-align-items:center;align-items:center;gap:6px;
-  padding:6px 6px 6px 14px;background:var(--bg);
-  border:1px solid var(--line);border-radius:14px;
-  box-shadow:0 10px 30px rgba(0,0,0,.14);
-  opacity:0;visibility:hidden;
-  transition:opacity .2s,-webkit-transform .2s,transform .2s,visibility .2s;
-}
-#sbar.open{opacity:1;visibility:visible;
-  -webkit-transform:translate(-50%,0);transform:translate(-50%,0)}
-#sInput{flex:1;-webkit-flex:1;min-width:0;height:34px;border:0;background:none;outline:0;font-size:16px}
+/* 搜尋列 */
+#sbar{position:fixed;top:var(--tbh);left:50%;width:calc(100% - 20px);max-width:560px;margin-top:8px;z-index:19;
+  transform:translate(-50%,-12px);display:flex;align-items:center;padding:6px 6px 6px 14px;background:var(--bg);
+  border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.14);
+  opacity:0;visibility:hidden;transition:opacity .2s,transform .2s,visibility .2s}
+#sbar.open{opacity:1;visibility:visible;transform:translate(-50%,0)}
+#sbar>*+*{margin-left:4px}
+#sInput{flex:1;min-width:0;height:36px;border:0;background:none;outline:0;font-size:16px}
 #sCount{font-size:13px;color:var(--mute);white-space:nowrap;font-variant-numeric:tabular-nums}
-.ib{width:34px;height:34px;border-radius:50%;font-size:16px;line-height:1}
-.ib:hover{background:var(--soft)}
+.ib{width:38px;height:38px;border-radius:50%;font-size:16px;line-height:1}
 
-/* ---------- 正文 ---------- */
-main{
-  width:100%;max-width:calc(var(--fs) * 40 + var(--pad) * 2);
-  margin:0 auto;padding:calc(var(--tbh) + 56px) var(--pad) 160px;
-}
+/* 正文 */
+main{width:100%;max-width:calc(var(--fs) * 40 + var(--pad) * 2);margin:0 auto;padding:calc(var(--tbh) + 56px) var(--pad) 160px}
 body[data-view=list] main{max-width:calc(720px + var(--pad) * 2)}
-h1{font-family:var(--ff);font-size:26px;font-weight:700;text-align:center;
-  letter-spacing:.08em;margin-bottom:64px}
-#bookContent{font-family:var(--ff);font-size:var(--fs);line-height:var(--lh);
-  white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere}
+h1{font-family:var(--ff);font-size:26px;font-weight:700;text-align:center;letter-spacing:.08em;margin-bottom:64px}
+#bookContent{font-family:var(--ff);font-size:var(--fs);line-height:var(--lh);white-space:pre-wrap;word-break:break-word}
 mark{background:#FFD54A;color:#111;border-radius:3px;padding:0 1px}
 mark.cur{background:#FF9F1A;outline:2px solid #FF9F1A}
-.note{font-family:var(--ui);white-space:normal;text-align:center;color:var(--mute);
-  font-size:16px;line-height:1.8;padding:80px 0}
+.note{font-family:var(--ui);white-space:normal;text-align:center;color:var(--mute);font-size:16px;line-height:1.8;padding:80px 0}
 .note.err{color:#D0314E}
 .note small{display:block;font-size:14px;margin-top:6px}
 
-/* ---------- 書目 ---------- */
+/* 書目 */
 .books{list-style:none;font-family:var(--ff);border-top:1px solid var(--line)}
-.books button{display:block;width:100%;text-align:left;padding:22px 4px;font-size:20px;
-  border-bottom:1px solid var(--line);transition:padding .2s,background .2s}
-.books button:hover{padding-left:16px;background:var(--soft)}
-#listHead{font-family:var(--ff);margin-bottom:36px;display:-webkit-flex;display:flex;
-  -webkit-align-items:baseline;align-items:baseline;gap:14px}
-#listHead b{font-size:40px;letter-spacing:.1em;font-weight:700}
+.books button{display:block;width:100%;text-align:left;padding:22px 4px;font-size:20px;border-bottom:1px solid var(--line)}
+.books button:active{background:var(--soft)}
+#listHead{font-family:var(--ff);margin-bottom:36px;display:flex;align-items:baseline}
+#listHead b{font-size:40px;letter-spacing:.1em;font-weight:700;margin-right:14px}
 #listHead span{color:var(--mute);font-family:var(--ui);font-size:15px}
+.cont{display:block;width:100%;text-align:left;padding:16px 18px;margin-bottom:28px;border-radius:12px;background:var(--fg);color:var(--bg);font-size:16px}
 
-/* ---------- 浮動按鈕 ---------- */
-.fab,#dock button{height:48px;border-radius:24px;background:var(--fg);color:var(--bg);
-  box-shadow:0 6px 20px rgba(0,0,0,.22);font-size:15px;
-  transition:-webkit-transform .15s,transform .15s,opacity .25s}
+/* 浮動按鈕 */
+.fab,#dock button{height:48px;border-radius:24px;background:var(--fg);color:var(--bg);box-shadow:0 6px 20px rgba(0,0,0,.22);font-size:15px;transition:transform .15s,opacity .25s}
 .fab{position:fixed;bottom:20px;z-index:18}
-.fab:active,#dock button:active{-webkit-transform:scale(.95);transform:scale(.95)}
-#dock{position:fixed;left:20px;bottom:20px;z-index:18;
-  display:-webkit-flex;display:flex;gap:8px}
-#dock button{padding:0 20px;display:-webkit-flex;display:flex;
-  -webkit-align-items:center;align-items:center;gap:8px}
-#dock i{font-style:normal;font-family:var(--ff);font-weight:700;font-size:17px}
+.fab:active,#dock button:active{transform:scale(.95)}
+#dock{position:fixed;left:20px;bottom:20px;z-index:18;display:flex}
+#dock button{padding:0 20px;display:flex;align-items:center}
+#dock button+button{margin-left:8px}
+#dock i{font-style:normal;font-family:var(--ff);font-weight:700;font-size:17px;margin-right:8px}
 #topBtn{right:20px;width:48px;font-size:20px;opacity:0;pointer-events:none}
 #topBtn.show{opacity:1;pointer-events:auto}
-
-/* 安全區域（不支援 env() 的瀏覽器自動忽略） */
-@supports (bottom: env(safe-area-inset-bottom)){
+@supports (bottom:env(safe-area-inset-bottom)){
   .fab{bottom:calc(20px + env(safe-area-inset-bottom))}
-  #dock{bottom:calc(20px + env(safe-area-inset-bottom))}
-  #dock{left:calc(20px + env(safe-area-inset-left))}
+  #dock{bottom:calc(20px + env(safe-area-inset-bottom));left:calc(20px + env(safe-area-inset-left))}
   #topBtn{right:calc(20px + env(safe-area-inset-right))}
 }
 
-/* ---------- 設定彈窗 ---------- */
-.overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(10,12,16,.45);
-  display:-webkit-flex;display:flex;
-  -webkit-align-items:flex-end;align-items:flex-end;
-  -webkit-justify-content:center;justify-content:center;z-index:30;
-  visibility:hidden;opacity:0;transition:opacity .2s,visibility .2s}
+/* 彈窗 */
+.overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(10,12,16,.45);display:flex;align-items:flex-end;
+  justify-content:center;z-index:30;visibility:hidden;opacity:0;transition:opacity .2s,visibility .2s}
 .overlay.open{visibility:visible;opacity:1}
-.sheet{width:100%;max-width:520px;max-height:88vh;overflow:auto;
-  background:var(--bg);border-radius:20px 20px 0 0;
-  padding:20px 22px 24px;
-  padding-bottom:calc(24px + env(safe-area-inset-bottom));
-  -webkit-transform:translateY(24px);transform:translateY(24px);
-  transition:-webkit-transform .25s,transform .25s;
-  -webkit-overflow-scrolling:touch}
-.overlay.open .sheet{-webkit-transform:none;transform:none}
-.sh{display:-webkit-flex;display:flex;
-  -webkit-align-items:center;align-items:center;
-  -webkit-justify-content:space-between;justify-content:space-between;margin-bottom:18px}
+.sheet{width:100%;max-width:520px;max-height:88vh;overflow:auto;-webkit-overflow-scrolling:touch;background:var(--bg);
+  border-radius:20px 20px 0 0;padding:20px 22px 24px;padding-bottom:calc(24px + env(safe-area-inset-bottom));
+  transform:translateY(24px);transition:transform .25s}
+.overlay.open .sheet{transform:none}
+.sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
 .sh b{font-size:20px}
 .row{padding:16px 0;border-top:1px solid var(--line)}
 .row>label,.row>.lb{display:block;font-size:14px;color:var(--mute);margin-bottom:10px}
-.line{display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;gap:8px}
-.in{flex:1;-webkit-flex:1;min-width:0;height:42px;padding:0 14px;border:1px solid var(--line);
-  border-radius:10px;background:var(--bg);font-size:16px}
-.in:focus{outline:2px solid var(--fg);outline-offset:-1px}
-.btn{height:42px;padding:0 20px;border-radius:10px;border:1px solid var(--line);font-size:15px}
-.btn:hover{background:var(--soft)}
+.line{display:flex;align-items:center}
+.line>*+*{margin-left:8px}
+.in{flex:1;min-width:0;height:44px;padding:0 14px;border:1px solid var(--line);border-radius:10px;background:var(--bg);font-size:16px}
+.in:focus,.hex:focus{outline:2px solid var(--fg);outline-offset:-1px}
+.btn{height:44px;padding:0 20px;border-radius:10px;border:1px solid var(--line);font-size:15px}
+.btn:active{background:var(--soft)}
 .btn.p{background:var(--fg);color:var(--bg);border-color:var(--fg)}
-input[type=range]{flex:1;-webkit-flex:1;min-width:0;accent-color:var(--fg);height:30px;background:none}
-.num{width:76px;flex:none;-webkit-flex:none;text-align:center}
-.seg,.pre{display:grid;gap:8px}
+.sq{width:44px;padding:0;flex:none}
+input[type=range]{flex:1;min-width:0;height:32px;background:none}
+.num{width:76px;flex:none;text-align:center}
+.seg,.pre{display:grid;grid-gap:8px;gap:8px}
 .seg{grid-template-columns:1fr 1fr}
 .pre{grid-template-columns:1fr 1fr 1fr 1fr}
-.seg button,.pre button{height:42px;border-radius:10px;border:1px solid var(--line);font-size:15px}
+.seg button,.pre button{height:44px;border-radius:10px;border:1px solid var(--line);font-size:15px}
 .seg button[aria-pressed=true]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
 .pre button[aria-pressed=true]{outline:2px solid var(--fg);outline-offset:2px}
-.cl{display:grid;grid-template-columns:2.5em 1fr 48px;-webkit-align-items:center;align-items:center;
-  gap:10px;margin-top:10px;font-size:15px}
-.hex{height:42px;min-width:0;padding:0 12px;border:1px solid var(--line);border-radius:10px;
-  background:var(--bg);font-size:16px;font-family:ui-monospace,Menlo,Consolas,monospace;
-  text-transform:uppercase}
-.hex:focus{outline:2px solid var(--fg);outline-offset:-1px}
+.cl{display:grid;grid-template-columns:3em 1fr;align-items:center;margin-top:14px;font-size:15px}
+.hex{height:44px;min-width:0;padding:0 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);font-size:16px;
+  font-family:ui-monospace,Menlo,Consolas,monospace;text-transform:uppercase}
 .hex.bad{border-color:#D0314E}
-.hint{font-size:13px;color:var(--mute);margin-top:10px}
-input[type=color]{width:48px;height:42px;border:1px solid var(--line);border-radius:10px;
-  background:none;padding:3px;cursor:pointer}
-.sheet .books button{font-size:19px;padding:16px 4px;display:-webkit-flex;display:flex;
-  -webkit-justify-content:space-between;justify-content:space-between;
-  -webkit-align-items:center;align-items:center}
+.sw{display:flex;flex-wrap:wrap;margin-top:10px}
+.sw button{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);margin:0 10px 10px 0}
+.sw button[aria-pressed=true]{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--fg)}
+.hint{font-size:13px;color:var(--mute);margin-top:6px}
+.sheet .books button{font-size:19px;padding:16px 4px;display:flex;justify-content:space-between;align-items:center}
 .books button[aria-current=true]{font-weight:700}
-.books button[aria-current=true]::after{content:"閱讀中";font-family:var(--ui);font-size:13px;
-  font-weight:400;color:var(--mute)}
+.books button[aria-current=true]::after{content:"閱讀中";font-family:var(--ui);font-size:13px;font-weight:400;color:var(--mute)}
 
-/* ---------- 響應式（避免 clamp / min / max，相容 Chrome 78） ---------- */
-@media (min-width:420px){ :root{--pad:28px} }
-@media (min-width:600px){
-  :root{--pad:40px}
-  h1{font-size:34px}
-  #listHead b{font-size:54px}
-  .books button{font-size:23px}
+/* 響應式：手機 / 平板 / 電腦 */
+@media(min-width:420px){:root{--pad:28px}}
+@media(min-width:600px){:root{--pad:40px}h1{font-size:34px}#listHead b{font-size:54px}.books button{font-size:23px}}
+@media(min-width:768px){:root{--pad:56px}}
+@media(min-width:900px){
+  h1{font-size:42px}#listHead b{font-size:64px}.books button{font-size:26px}
+  .books{column-count:2;column-gap:56px}.books li{break-inside:avoid}
+  .sheet .books{column-count:1}.sheet .books button{font-size:19px}
 }
-@media (min-width:768px){ :root{--pad:56px} }
-@media (min-width:900px){
-  h1{font-size:42px}
-  #listHead b{font-size:64px}
-  .books button{font-size:26px}
+@media(min-width:1024px){:root{--pad:72px}}
+@media(min-width:640px){
+  .overlay{align-items:center}
+  .sheet{border-radius:20px;border:1px solid var(--line);box-shadow:0 24px 60px rgba(0,0,0,.3);padding-bottom:24px}
 }
-@media (min-width:1024px){ :root{--pad:72px} }
-@media (min-width:640px){
-  .overlay{-webkit-align-items:center;align-items:center}
-  .sheet{border-radius:20px;border:1px solid var(--line);
-    box-shadow:0 24px 60px rgba(0,0,0,.3);
-    padding-bottom:24px}
-}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@media(max-height:480px){:root{--tbh:44px}.sheet{max-height:94vh}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body data-view="list">
@@ -207,11 +149,11 @@ input[type=color]{width:48px;height:42px;border:1px solid var(--line);border-rad
 </header>
 
 <div id="sbar" role="search">
-  <input id="sInput" type="search" placeholder="搜尋本書內容" autocomplete="off" enterkeyhint="search" />
+  <input id="sInput" type="search" placeholder="搜尋本書內容" autocomplete="off" />
   <span id="sCount"></span>
-  <button class="ib" id="sPrev" title="上一個" aria-label="上一個">↑</button>
-  <button class="ib" id="sNext" title="下一個" aria-label="下一個">↓</button>
-  <button class="ib" id="sClose" title="關閉搜尋" aria-label="關閉搜尋">✕</button>
+  <button class="ib" id="sPrev" aria-label="上一個">↑</button>
+  <button class="ib" id="sNext" aria-label="下一個">↓</button>
+  <button class="ib" id="sClose" aria-label="關閉搜尋">✕</button>
 </div>
 
 <main id="main">
@@ -221,8 +163,8 @@ input[type=color]{width:48px;height:42px;border:1px solid var(--line);border-rad
 </main>
 
 <div id="dock">
-  <button id="libBtn" aria-haspopup="dialog">書目</button>
-  <button id="menuBtn" aria-haspopup="dialog"><i>Aa</i>設定</button>
+  <button id="libBtn">書目</button>
+  <button id="menuBtn"><i>Aa</i>設定</button>
 </div>
 <button class="fab" id="topBtn" aria-label="回到頂部">↑</button>
 
@@ -241,16 +183,20 @@ input[type=color]{width:48px;height:42px;border:1px solid var(--line);border-rad
     <div class="row">
       <label for="fsNum">字體大小（8 – 128）</label>
       <div class="line">
-        <button class="ib btn" id="fsMinus" aria-label="縮小" style="width:42px;padding:0">−</button>
+        <button class="btn sq" id="fsMinus" aria-label="縮小">−</button>
         <input type="range" id="fsRange" min="8" max="128" step="1" aria-label="字體大小滑桿" />
-        <button class="ib btn" id="fsPlus" aria-label="放大" style="width:42px;padding:0">+</button>
+        <button class="btn sq" id="fsPlus" aria-label="放大">+</button>
         <input class="in num" id="fsNum" type="number" min="8" max="128" inputmode="numeric" />
       </div>
     </div>
 
     <div class="row">
-      <label for="lhRange">行距　<b id="lhVal" style="color:var(--fg)"></b></label>
-      <div class="line"><input type="range" id="lhRange" min="1.3" max="2.8" step="0.1" /></div>
+      <label for="lhRange">行距 <b id="lhVal" style="color:var(--fg)"></b></label>
+      <div class="line">
+        <button class="btn sq" id="lhMinus" aria-label="收窄">−</button>
+        <input type="range" id="lhRange" min="1.3" max="2.8" step="0.1" />
+        <button class="btn sq" id="lhPlus" aria-label="放寬">+</button>
+      </div>
     </div>
 
     <div class="row">
@@ -264,22 +210,14 @@ input[type=color]{width:48px;height:42px;border:1px solid var(--line);border-rad
     <div class="row">
       <div class="lb">配色</div>
       <div class="pre" id="presets"></div>
-      <div class="cl">
-        <span>背景</span>
-        <input class="hex" id="bgHex" maxlength="7" placeholder="#FFFFFF" spellcheck="false" autocomplete="off" aria-label="背景顏色色碼" />
-        <input type="color" id="bgColor" aria-label="選擇背景顏色" />
-      </div>
-      <div class="cl">
-        <span>文字</span>
-        <input class="hex" id="fgHex" maxlength="7" placeholder="#1B1D21" spellcheck="false" autocomplete="off" aria-label="文字顏色色碼" />
-        <input type="color" id="fgColor" aria-label="選擇文字顏色" />
-      </div>
-      <p class="hint">可直接輸入 6 位色碼，例如 1B1D21</p>
+      <div class="cl"><span>背景</span><input class="hex" id="bgHex" maxlength="7" placeholder="#FFFFFF" spellcheck="false" autocomplete="off" aria-label="背景顏色色碼" /></div>
+      <div class="sw" id="bgSw" data-k="bg"></div>
+      <div class="cl"><span>文字</span><input class="hex" id="fgHex" maxlength="7" placeholder="#1B1D21" spellcheck="false" autocomplete="off" aria-label="文字顏色色碼" /></div>
+      <div class="sw" id="fgSw" data-k="fg"></div>
+      <p class="hint">可點選顏色，或直接輸入 6 位色碼，例如 1B1D21</p>
     </div>
 
-    <div class="row" style="padding-bottom:0">
-      <button class="btn" id="resetBtn" style="width:100%">恢復預設</button>
-    </div>
+    <div class="row" style="padding-bottom:0"><button class="btn" id="resetBtn" style="width:100%">恢復預設</button></div>
   </div>
 </div>
 
@@ -297,22 +235,21 @@ input[type=color]{width:48px;height:42px;border:1px solid var(--line);border-rad
 (function () {
 'use strict';
 var $ = function (id) { return document.getElementById(id); };
-var root = document.documentElement;
+var root = document.documentElement, body = document.body;
 var bookInput = $('bookInput'), bookTitle = $('bookTitle'), bookContent = $('bookContent');
 var listHead = $('listHead'), listCount = $('listCount'), topTitle = $('topTitle');
 var readBtn = $('readBtn'), overlay = $('overlay'), libOverlay = $('libOverlay');
 var sbar = $('sbar'), sInput = $('sInput'), sCount = $('sCount'), topBar = $('top');
+var topBtn = $('topBtn'), bar = $('bar'), pct = $('pct');
+var REF = 60, CH = 3000, MAXH = 20000;
 
-/* ===== 本地儲存（只存閱讀偏好與進度） ===== */
+/* ===== 本地儲存 ===== */
 var LS = {
-  get: function (k, d) {
-    try { var v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); }
-    catch (e) { return d; }
-  },
+  get: function (k, d) { try { var v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
   set: function (k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
 };
 
-/* ===== 色彩工具（取代 color-mix，相容舊版 Chrome） ===== */
+/* ===== 色彩工具 ===== */
 function hx2rgb(hex) {
   var h = String(hex == null ? '' : hex).replace('#', '').trim();
   if (h.length === 3) h = h.charAt(0) + h.charAt(0) + h.charAt(1) + h.charAt(1) + h.charAt(2) + h.charAt(2);
@@ -323,8 +260,7 @@ function mixHex(a, b, p) {
   var A = hx2rgb(a), B = hx2rgb(b), out = '#';
   for (var i = 0; i < 3; i++) {
     var v = Math.round(A[i] * p + B[i] * (1 - p));
-    if (v < 0) v = 0; if (v > 255) v = 255;
-    out += ('0' + v.toString(16)).slice(-2);
+    out += ('0' + Math.min(255, Math.max(0, v)).toString(16)).slice(-2);
   }
   return out.toUpperCase();
 }
@@ -343,200 +279,215 @@ var FONTS = {
   sans: '"Noto Sans TC","PingFang HK","PingFang TC","Microsoft JhengHei",sans-serif'
 };
 var PRESETS = [
-  { n: '白紙', bg: '#FFFFFF', fg: '#1B1D21' },
-  { n: '淺灰', bg: '#E8EAED', fg: '#22252A' },
-  { n: '豆沙綠', bg: '#CCE5D0', fg: '#1F2D22' },
-  { n: '夜間', bg: '#14171B', fg: '#C8CDD5' }
+  { n: '白紙', bg: '#FFFFFF', fg: '#1B1D21' }, { n: '淺灰', bg: '#E8EAED', fg: '#22252A' },
+  { n: '豆沙綠', bg: '#CCE5D0', fg: '#1F2D22' }, { n: '夜間', bg: '#14171B', fg: '#C8CDD5' }
 ];
+var SW_BG = ['#FFFFFF', '#F2F2F2', '#E8EAED', '#CCE5D0', '#DDE7F3', '#EFE3CC', '#1E2125', '#000000'];
+var SW_FG = ['#1B1D21', '#000000', '#3A3F47', '#5B4636', '#1F2D22', '#C8CDD5', '#DADADA', '#FFFFFF'];
 
+function clampFs(v) { v = parseInt(v, 10); return isNaN(v) ? null : Math.min(128, Math.max(8, v)); }
+function clampLh(v) { v = parseFloat(v); return isNaN(v) ? null : Math.round(Math.min(2.8, Math.max(1.3, v)) * 10) / 10; }
 var S = (function () {
-  var raw = LS.get('ytr:set', {}) || {};
-  var s = {};
-  for (var k in DEF) { if (Object.prototype.hasOwnProperty.call(DEF, k)) s[k] = DEF[k]; }
-  for (var k2 in raw) {
-    if (!Object.prototype.hasOwnProperty.call(raw, k2)) continue;
-    if (k2 === 'fs') { var f = parseInt(raw.fs, 10); if (!isNaN(f)) s.fs = Math.min(128, Math.max(8, f)); }
-    else if (k2 === 'lh') { var l = parseFloat(raw.lh); if (!isNaN(l)) s.lh = Math.min(2.8, Math.max(1.3, l)); }
-    else if (k2 === 'ff') { if (raw.ff === 'serif' || raw.ff === 'sans') s.ff = raw.ff; }
-    else if (k2 === 'bg' || k2 === 'fg') { var h = normalizeHex(raw[k2]); if (h) s[k2] = h; }
-  }
+  var raw = LS.get('ytr:set', {}) || {}, s = { fs: DEF.fs, lh: DEF.lh, ff: DEF.ff, bg: DEF.bg, fg: DEF.fg };
+  var f = clampFs(raw.fs); if (f !== null) s.fs = f;
+  var l = clampLh(raw.lh); if (l !== null) s.lh = l;
+  if (raw.ff === 'serif' || raw.ff === 'sans') s.ff = raw.ff;
+  var b = normalizeHex(raw.bg || ''); if (b) s.bg = b;
+  var g = normalizeHex(raw.fg || ''); if (g) s.fg = g;
   return s;
 })();
 
-function clampFs(v) { v = parseInt(v, 10); return isNaN(v) ? null : Math.min(128, Math.max(8, v)); }
-function ratio() {
-  var h = root.scrollHeight - window.innerHeight;
-  return h > 0 ? (window.pageYOffset || root.scrollTop || 0) / h : 0;
+function applyColors() {
+  var st = root.style;
+  st.setProperty('--bg', S.bg); st.setProperty('--fg', S.fg);
+  st.setProperty('--mute', mixHex(S.fg, S.bg, 0.55)); st.setProperty('--line', mixHex(S.fg, S.bg, 0.14));
+  st.setProperty('--soft', mixHex(S.fg, S.bg, 0.06)); st.setProperty('--bg-rgb', hx2rgb(S.bg).join(','));
+  var tc = $('themeColor'); if (tc) tc.setAttribute('content', S.bg);
 }
-function restoreRatio(r) {
-  var h = root.scrollHeight - window.innerHeight;
-  if (h > 0) window.scrollTo(0, r * h);
+function applyType() {
+  var st = root.style;
+  st.setProperty('--fs', S.fs + 'px'); st.setProperty('--lh', S.lh); st.setProperty('--ff', FONTS[S.ff] || FONTS.serif);
 }
-
-function applyAll(keepPos) {
-  var r = keepPos ? ratio() : 0;
-  root.style.setProperty('--bg', S.bg);
-  root.style.setProperty('--fg', S.fg);
-  root.style.setProperty('--fs', S.fs + 'px');
-  root.style.setProperty('--lh', S.lh);
-  root.style.setProperty('--ff', FONTS[S.ff] || FONTS.serif);
-  root.style.setProperty('--mute', mixHex(S.fg, S.bg, 0.55));
-  root.style.setProperty('--line', mixHex(S.fg, S.bg, 0.14));
-  root.style.setProperty('--soft', mixHex(S.fg, S.bg, 0.06));
-  root.style.setProperty('--bg-rgb', hx2rgb(S.bg).join(','));
-
-  var tc = $('themeColor');
-  if (tc && tc.setAttribute) tc.setAttribute('content', S.bg);
-
+function syncUI() {
   $('fsRange').value = S.fs;
-  $('fsNum').value = S.fs;
-  $('lhRange').value = S.lh;
-  $('lhVal').textContent = Number(S.lh).toFixed(1);
-  $('bgColor').value = S.bg.toLowerCase();
-  $('fgColor').value = S.fg.toLowerCase();
-
-  [['bgHex', S.bg], ['fgHex', S.fg]].forEach(function (pair) {
-    var el = $(pair[0]);
-    if (document.activeElement !== el) {
-      el.value = pair[1].toUpperCase();
-      el.className = 'hex';
-    }
+  if (document.activeElement !== $('fsNum')) $('fsNum').value = S.fs;
+  $('lhRange').value = S.lh; $('lhVal').textContent = Number(S.lh).toFixed(1);
+  [['bgHex', S.bg], ['fgHex', S.fg]].forEach(function (p) {
+    var el = $(p[0]); if (document.activeElement !== el) { el.value = p[1]; el.className = 'hex'; }
   });
-
-  var ffb = document.querySelectorAll('#ffSeg button');
-  for (var i = 0; i < ffb.length; i++) {
-    ffb[i].setAttribute('aria-pressed', ffb[i].getAttribute('data-ff') === S.ff ? 'true' : 'false');
+  var i, b = document.querySelectorAll('#ffSeg button');
+  for (i = 0; i < b.length; i++) b[i].setAttribute('aria-pressed', b[i].getAttribute('data-ff') === S.ff ? 'true' : 'false');
+  b = document.querySelectorAll('#presets button');
+  for (i = 0; i < b.length; i++) {
+    b[i].setAttribute('aria-pressed', (PRESETS[i].bg === S.bg && PRESETS[i].fg === S.fg) ? 'true' : 'false');
   }
-  var pbs = document.querySelectorAll('#presets button');
-  for (var j = 0; j < pbs.length; j++) {
-    var p = PRESETS[j];
-    var on = p.bg.toUpperCase() === S.bg.toUpperCase() && p.fg.toUpperCase() === S.fg.toUpperCase();
-    pbs[j].setAttribute('aria-pressed', on ? 'true' : 'false');
+  b = document.querySelectorAll('.sw button');
+  for (i = 0; i < b.length; i++) {
+    b[i].setAttribute('aria-pressed', b[i].getAttribute('data-c') === S[b[i].parentNode.getAttribute('data-k')] ? 'true' : 'false');
   }
-
   LS.set('ytr:set', S);
-  if (keepPos) restoreRatio(r);
 }
-function setFs(v) {
-  var n = clampFs(v);
-  if (n === null) { $('fsNum').value = S.fs; return; }
-  S.fs = n;
-  applyAll(true);
-}
+function colorsChanged() { applyColors(); syncUI(); }
 
-/* 預設配色按鈕 */
-(function buildPresets() {
-  var box = $('presets');
-  PRESETS.forEach(function (p) {
+/* 字級／行距變動較耗效能：先更新數值，停手後才一次排版，並保持閱讀位置 */
+var typeT = 0, pend = null;
+function typeChanged() {
+  syncUI();
+  if (!pend && currentBook && els.length) pend = anchor();
+  clearTimeout(typeT);
+  typeT = setTimeout(function () {
+    applyType();
+    if (pend) { restoreAnchor(pend); pend = null; }
+    updateProgress();
+  }, 140);
+}
+function setFs(v) { var n = clampFs(v); if (n === null) { $('fsNum').value = S.fs; return; } S.fs = n; typeChanged(); }
+function setLh(v) { var n = clampLh(v); if (n === null) return; S.lh = n; typeChanged(); }
+
+PRESETS.forEach(function (p) {
+  var b = document.createElement('button');
+  b.type = 'button'; b.textContent = p.n; b.style.background = p.bg; b.style.color = p.fg;
+  b.onclick = function () { S.bg = p.bg; S.fg = p.fg; colorsChanged(); };
+  $('presets').appendChild(b);
+});
+function buildSw(id, list, key) {
+  list.forEach(function (c) {
     var b = document.createElement('button');
-    b.type = 'button';
-    b.textContent = p.n;
-    b.style.background = p.bg;
-    b.style.color = p.fg;
-    b.onclick = function () { S.bg = p.bg; S.fg = p.fg; applyAll(); };
-    box.appendChild(b);
+    b.type = 'button'; b.style.background = c; b.setAttribute('data-c', c); b.setAttribute('aria-label', c);
+    b.onclick = function () { S[key] = c; colorsChanged(); };
+    $(id).appendChild(b);
   });
-})();
+}
+buildSw('bgSw', SW_BG, 'bg'); buildSw('fgSw', SW_FG, 'fg');
 
 $('fsRange').addEventListener('input', function (e) { setFs(e.target.value); });
 $('fsNum').addEventListener('change', function (e) { setFs(e.target.value); });
 $('fsMinus').addEventListener('click', function () { setFs(S.fs - 1); });
 $('fsPlus').addEventListener('click', function () { setFs(S.fs + 1); });
-$('lhRange').addEventListener('input', function (e) {
-  var v = parseFloat(e.target.value);
-  if (isNaN(v)) return;
-  S.lh = Math.min(2.8, Math.max(1.3, v));
-  applyAll(true);
-});
-$('bgColor').addEventListener('input', function (e) { S.bg = e.target.value.toUpperCase(); applyAll(); });
-$('fgColor').addEventListener('input', function (e) { S.fg = e.target.value.toUpperCase(); applyAll(); });
-
+$('lhRange').addEventListener('input', function (e) { setLh(e.target.value); });
+$('lhMinus').addEventListener('click', function () { setLh(S.lh - 0.1); });
+$('lhPlus').addEventListener('click', function () { setLh(S.lh + 0.1); });
 function hexInput(id, key) {
   var el = $(id);
   el.addEventListener('input', function () {
-    var v = el.value.trim();
-    var h = normalizeHex(v);
+    var v = el.value.trim(), h = normalizeHex(v);
     if (h === null) { el.className = v === '' ? 'hex' : 'hex bad'; return; }
-    el.className = 'hex';
-    S[key] = h;
-    applyAll();
+    el.className = 'hex'; S[key] = h; colorsChanged();
   });
-  el.addEventListener('blur', function () {
-    el.value = S[key].toUpperCase();
-    el.className = 'hex';
-  });
+  el.addEventListener('blur', function () { el.value = S[key]; el.className = 'hex'; });
 }
-hexInput('bgHex', 'bg');
-hexInput('fgHex', 'fg');
-
+hexInput('bgHex', 'bg'); hexInput('fgHex', 'fg');
 $('ffSeg').addEventListener('click', function (e) {
   var b = e.target;
   while (b && b !== this && !b.getAttribute('data-ff')) b = b.parentNode;
-  if (b && b.getAttribute && b.getAttribute('data-ff')) {
-    S.ff = b.getAttribute('data-ff');
-    applyAll(true);
-  }
+  if (b && b.getAttribute && b.getAttribute('data-ff')) { S.ff = b.getAttribute('data-ff'); typeChanged(); }
 });
 $('resetBtn').addEventListener('click', function () {
-  S = { fs: DEF.fs, lh: DEF.lh, ff: DEF.ff, bg: DEF.bg, fg: DEF.fg };
-  applyAll(true);
+  S = { fs: DEF.fs, lh: DEF.lh, ff: DEF.ff, bg: DEF.bg, fg: DEF.fg }; applyColors(); typeChanged();
 });
 
 /* ===== 彈窗 ===== */
-function lockScroll() { document.body.style.overflow = 'hidden'; }
+function lockScroll() { body.style.overflow = 'hidden'; }
 function unlockScroll() {
-  if (!overlay.classList.contains('open') && !libOverlay.classList.contains('open')) {
-    document.body.style.overflow = '';
-  }
+  if (!overlay.classList.contains('open') && !libOverlay.classList.contains('open')) body.style.overflow = '';
 }
-/* 注意：手機／平板開啟設定時不自動聚焦，避免彈出軟鍵盤 */
 function isDesktopPointer() {
-  try {
-    return window.matchMedia && window.matchMedia('(hover:hover) and (pointer:fine)').matches;
-  } catch (e) { return false; }
+  try { return window.matchMedia && window.matchMedia('(hover:hover) and (pointer:fine)').matches; } catch (e) { return false; }
 }
 function openMenu() {
-  overlay.classList.add('open');
-  lockScroll();
-  if (isDesktopPointer()) {
-    setTimeout(function () { try { bookInput.focus({ preventScroll: true }); } catch (e) { bookInput.focus(); } }, 50);
-  }
+  overlay.classList.add('open'); lockScroll();
+  if (isDesktopPointer()) setTimeout(function () { try { bookInput.focus({ preventScroll: true }); } catch (e) { bookInput.focus(); } }, 50);
 }
-function closeMenu() {
-  overlay.classList.remove('open');
-  unlockScroll();
-}
+function closeMenu() { overlay.classList.remove('open'); unlockScroll(); }
 $('menuBtn').addEventListener('click', openMenu);
 $('closeBtn').addEventListener('click', closeMenu);
 overlay.addEventListener('click', function (e) { if (e.target === overlay) closeMenu(); });
 
-/* ===== 畫面狀態 ===== */
-var currentBook = '', rawText = '', bookListData = [];
+/* ===== 書籍狀態（分段渲染：首屏秒開、捲動順暢） ===== */
+var currentBook = '', bookListData = [], chunks = [], els = [], rendered = 0, gen = 0, renderTimer = 0, reqSeq = 0, lastA = null;
 
+function resetBook() {
+  gen++; clearTimeout(renderTimer); clearTimeout(progT); progT = 0;
+  currentBook = ''; chunks = []; els = []; rendered = 0; lastA = null; pend = null;
+  clearSearch();
+}
 function setView(v) {
-  document.body.setAttribute('data-view', v);
+  body.setAttribute('data-view', v);
   listHead.hidden = (v !== 'list');
   closeSearch();
   topBar.classList.remove('hide');
+  if (v === 'list') { pct.textContent = ''; bar.style.transform = 'scaleX(0)'; }
 }
 function note(msg, cls, sub) {
   bookContent.innerHTML = '';
   var d = document.createElement('div');
   d.className = 'note' + (cls ? ' ' + cls : '');
   d.textContent = msg;
-  if (sub) {
-    var s = document.createElement('small');
-    s.textContent = sub;
-    d.appendChild(s);
-  }
+  if (sub) { var s = document.createElement('small'); s.textContent = sub; d.appendChild(s); }
   bookContent.appendChild(d);
 }
 function showError(msg) {
-  currentBook = ''; rawText = '';
-  bookTitle.hidden = true;
-  setView('book');
-  topTitle.textContent = '';
-  note(msg, 'err');
+  resetBook(); bookTitle.hidden = true; setView('book'); topTitle.textContent = ''; note(msg, 'err');
+}
+
+function splitText(t) {
+  var out = [], pos = 0, n = t.length, end, nl;
+  while (pos < n) {
+    end = pos + CH;
+    if (end >= n) { out.push(t.slice(pos)); break; }
+    nl = t.indexOf('\n', end);
+    end = nl < 0 ? n : nl + 1;
+    out.push(t.slice(pos, end)); pos = end;
+  }
+  return out;
+}
+function renderTo(limit, budget) {
+  var t0 = Date.now(), frag = document.createDocumentFragment(), n = 0;
+  while (rendered < chunks.length && rendered < limit) {
+    var d = document.createElement('div');
+    d.textContent = chunks[rendered]; els[rendered] = d; frag.appendChild(d); rendered++;
+    if (budget && (++n & 7) === 0 && Date.now() - t0 > budget) break;
+  }
+  bookContent.appendChild(frag);
+}
+function renderRest(g) {
+  if (g !== gen || rendered >= chunks.length) return;
+  renderTo(chunks.length, 10);
+  renderTimer = setTimeout(function () { renderRest(g); }, 16);
+}
+function scrollTop() { return window.pageYOffset || root.scrollTop || 0; }
+function anchor() {
+  var y = scrollTop() + REF, lo = 0, hi = els.length - 1;
+  while (lo < hi) { var mid = (lo + hi + 1) >> 1; if (els[mid].offsetTop <= y) lo = mid; else hi = mid - 1; }
+  var el = els[lo];
+  return { c: lo, r: Math.max(0, Math.min(1, (y - el.offsetTop) / Math.max(1, el.offsetHeight))) };
+}
+function restoreAnchor(a) {
+  if (!a || !els.length) return;
+  if (a.c >= rendered) renderTo(a.c + 3, 0);
+  var el = els[Math.min(a.c, els.length - 1)];
+  if (!el) return;
+  if (a.c === 0 && a.r === 0) { window.scrollTo(0, 0); return; }
+  window.scrollTo(0, el.offsetTop + a.r * el.offsetHeight - REF);
+}
+
+function startBook(name, text) {
+  gen++; clearTimeout(renderTimer);
+  chunks = splitText(text.replace(/\r\n?/g, '\n')); els = []; rendered = 0; lastA = null;
+  bookContent.innerHTML = '';
+  currentBook = name;
+  bookTitle.textContent = '《' + name + '》'; bookTitle.hidden = false; topTitle.textContent = name;
+  var sv = LS.get('ytr:pos:' + name, null), a = null, N = chunks.length;
+  if (sv && typeof sv === 'object' && sv.n === N) a = { c: Math.min(N - 1, sv.c), r: sv.r };
+  else if (sv != null) {
+    var p = typeof sv === 'object' ? sv.p : sv;
+    if (typeof p === 'number' && p > 0) { var x = Math.min(0.9999, p) * N; a = { c: Math.floor(x), r: x - Math.floor(x) }; }
+  }
+  renderTo(a ? a.c + 3 : 4, 0);
+  if (a) restoreAnchor(a); else window.scrollTo(0, 0);
+  var g = gen; renderTimer = setTimeout(function () { renderRest(g); }, 30);
+  LS.set('ytr:last', name);
+  updateProgress();
 }
 
 /* ===== 書目 ===== */
@@ -544,251 +495,250 @@ function buildList(books) {
   var ul = document.createElement('ul');
   ul.className = 'books';
   books.forEach(function (name) {
-    var li = document.createElement('li');
-    var b = document.createElement('button');
-    b.type = 'button';
-    b.textContent = name;
+    var li = document.createElement('li'), b = document.createElement('button');
+    b.type = 'button'; b.textContent = name;
     if (name === currentBook) b.setAttribute('aria-current', 'true');
-    b.addEventListener('click', function () {
-      closeLib();
-      bookInput.value = name;
-      if (name !== currentBook) loadBook(name);
-    });
-    li.appendChild(b);
-    ul.appendChild(li);
+    b.addEventListener('click', function () { closeLib(); bookInput.value = name; if (name !== currentBook) loadBook(name); });
+    li.appendChild(b); ul.appendChild(li);
   });
   return ul;
 }
 function renderBookList(books) {
-  currentBook = ''; rawText = '';
-  setView('list');
-  bookTitle.hidden = true;
-  topTitle.textContent = '書目';
-  $('pct').textContent = '';
+  resetBook(); setView('list');
+  bookTitle.hidden = true; topTitle.textContent = '書目';
   listCount.textContent = books.length ? books.length + ' 本' : '';
   bookContent.innerHTML = '';
+  var last = LS.get('ytr:last', '');
+  if (last && books.indexOf(last) >= 0) {
+    var cb = document.createElement('button');
+    cb.type = 'button'; cb.className = 'cont'; cb.textContent = '繼續閱讀　《' + last + '》';
+    cb.onclick = function () { bookInput.value = last; loadBook(last); };
+    bookContent.appendChild(cb);
+  }
   bookContent.appendChild(buildList(books));
   window.scrollTo(0, 0);
 }
+function showList() {
+  if (bookListData.length) renderBookList(bookListData); else loadBookListFromCSV();
+}
 
 /* ===== 載入書籍 ===== */
+function decodeBuf(buf) {
+  var u8 = new Uint8Array(buf);
+  try { return new TextDecoder('utf-8', { fatal: true }).decode(u8).replace(/^\uFEFF/, ''); } catch (e) {}
+  try { return new TextDecoder('gb18030').decode(u8); } catch (e2) {}
+  return new TextDecoder('utf-8').decode(u8);
+}
 function loadBook(bookName) {
   if (!bookName || !bookName.trim()) { openMenu(); showError('請輸入書名'); return; }
   var name = bookName.trim();
   if (/[\\/]|\.\./.test(name)) { showError('書名包含非法字元，請重新輸入'); return; }
-  var filePath = 'content/' + name + '.txt';
-
-  closeMenu(); closeLib();
-  bookTitle.hidden = true;
-  setView('book');
-  topTitle.textContent = name;
-  note('載入中…');
-  readBtn.disabled = true;
-
-  var done = false;
-  function finish() { if (!done) { done = true; readBtn.disabled = false; } }
-
-  // 逾時保護（部分舊版 WebView 對 fetch 失敗不觸發 catch）
-  var timer = setTimeout(function () {
-    if (done) return;
-    finish();
-    showError('載入逾時，請檢查網絡後再試');
-  }, 20000);
-
-  fetch(filePath, { method: 'GET', headers: { 'Accept': 'text/plain; charset=utf-8' } })
-    .then(function (response) {
-      if (!response.ok) {
-        clearTimeout(timer); finish();
-        if (response.status === 404) showError('找不到這本書「' + name + '」，請檢查書名是否正確');
-        else showError('載入失敗 (HTTP ' + response.status + ')，請稍後再試');
+  closeMenu(); closeLib(); saveNow();
+  var wasList = body.getAttribute('data-view') === 'list';
+  resetBook(); bookTitle.hidden = true; setView('book'); topTitle.textContent = name;
+  note('載入中…'); readBtn.disabled = true;
+  if (wasList) { try { history.pushState({ v: 'book' }, ''); } catch (e) {} }
+  var rid = ++reqSeq;
+  var timer = setTimeout(function () { if (rid !== reqSeq) return; readBtn.disabled = false; showError('載入逾時，請檢查網絡後再試'); }, 45000);
+  function end() { clearTimeout(timer); if (rid === reqSeq) readBtn.disabled = false; }
+  fetch('content/' + encodeURIComponent(name) + '.txt', { method: 'GET' })
+    .then(function (res) {
+      if (rid !== reqSeq) return null;
+      if (!res.ok) {
+        end();
+        if (res.status === 404) showError('找不到這本書「' + name + '」，請檢查書名是否正確');
+        else showError('載入失敗 (HTTP ' + res.status + ')，請稍後再試');
         return null;
       }
-      return response.text();
+      return window.TextDecoder ? res.arrayBuffer().then(decodeBuf) : res.text();
     })
     .then(function (text) {
-      if (text === null || text === undefined) return;
-      clearTimeout(timer); finish();
+      if (rid !== reqSeq || text == null) return;
+      end();
       if (!text.trim()) { showError('「' + name + '」內容為空，請檢查檔案'); return; }
-
-      currentBook = name;
-      rawText = text;
-      bookTitle.textContent = '《' + name + '》';
-      bookTitle.hidden = false;
-      bookContent.textContent = text;
-      topTitle.textContent = name;
-      var saved = LS.get('ytr:pos:' + name, 0);
-      requestAnimationFrame(function () { restoreRatio(saved); onScroll(); });
+      startBook(name, text);
     })
-    ['catch'](function (err) {
-      clearTimeout(timer); finish();
+    .catch(function (err) {
+      if (rid !== reqSeq) return;
+      end();
       if (window.console && console.error) console.error('載入書籍出錯:', err);
       showError('網絡錯誤，請檢查網絡連線後再試');
     });
 }
-
 function loadBookListFromCSV() {
-  setView('list');
-  listCount.textContent = '';
-  fetch('content/booklist.csv', { method: 'GET', headers: { 'Accept': 'text/csv; charset=utf-8' } })
-    .then(function (response) {
-      if (!response.ok) {
-        note('找不到書單檔案', '', '請建立 content/booklist.csv，每行一個書名（不含 .txt）');
-        return null;
-      }
-      return response.text();
+  setView('list'); listCount.textContent = '';
+  fetch('content/booklist.csv', { method: 'GET' })
+    .then(function (res) {
+      if (!res.ok) { note('找不到書單檔案', '', '請建立 content/booklist.csv，每行一個書名（不含 .txt）'); return null; }
+      return window.TextDecoder ? res.arrayBuffer().then(decodeBuf) : res.text();
     })
-    .then(function (csvText) {
-      if (csvText === null || csvText === undefined) return;
-      var lines = csvText.split(/\r?\n/).map(function (l) { return l.trim(); })
-        .filter(function (l) { return l.length > 0; });
+    .then(function (csv) {
+      if (csv == null) return;
+      var lines = csv.split(/\r?\n/).map(function (l) { return l.trim(); }).filter(function (l) { return l.length > 0; });
       var books = lines;
       if (lines.length > 0) {
-        var first = lines[0].toLowerCase();
-        if (first.indexOf('書名') >= 0 || first.indexOf('book') >= 0 ||
-            first.indexOf('名稱') >= 0 || first.indexOf('name') >= 0) {
-          books = lines.slice(1);
-        }
+        var f = lines[0].toLowerCase();
+        if (f.indexOf('書名') >= 0 || f.indexOf('book') >= 0 || f.indexOf('名稱') >= 0 || f.indexOf('name') >= 0) books = lines.slice(1);
       }
       books = books.filter(function (n) { return n.length > 0; });
       bookListData = books;
-      if (books.length === 0) note('書單是空的', '', '請在 content/booklist.csv 加入書名（每行一個）');
+      if (!books.length) note('書單是空的', '', '請在 content/booklist.csv 加入書名（每行一個）');
       else renderBookList(books);
     })
-    ['catch'](function (err) {
+    .catch(function (err) {
       if (window.console && console.error) console.error('載入書單CSV失敗:', err);
       note('載入書單失敗', 'err', '請檢查網絡，並確保 content/booklist.csv 存在');
     });
 }
 
-/* 書目彈窗 */
+/* 書目彈窗：隨時查看，不離開正在讀的書 */
 function openLib() {
-  var body = $('libBody');
-  body.innerHTML = '';
-  if (bookListData.length) body.appendChild(buildList(bookListData));
-  else {
-    var d = document.createElement('div');
-    d.className = 'note';
-    d.style.padding = '40px 0';
-    d.textContent = '書單未能載入，或書單是空的';
-    body.appendChild(d);
-  }
+  var bd = $('libBody');
+  bd.innerHTML = '';
+  if (bookListData.length) bd.appendChild(buildList(bookListData));
+  else { var d = document.createElement('div'); d.className = 'note'; d.style.padding = '40px 0'; d.textContent = '書單未能載入，或書單是空的'; bd.appendChild(d); }
   $('libCount').textContent = bookListData.length ? bookListData.length + ' 本' : '';
-  libOverlay.classList.add('open');
-  lockScroll();
-  var c = body.querySelector('[aria-current]');
-  if (c && c.scrollIntoView) { try { c.scrollIntoView({ block: 'center' }); } catch (e) { c.scrollIntoView(); } }
+  libOverlay.classList.add('open'); lockScroll();
+  var c = bd.querySelector('[aria-current]');
+  if (c) { try { c.scrollIntoView({ block: 'center' }); } catch (e) { c.scrollIntoView(); } }
 }
-function closeLib() {
-  libOverlay.classList.remove('open');
-  unlockScroll();
-}
+function closeLib() { libOverlay.classList.remove('open'); unlockScroll(); }
 $('libBtn').addEventListener('click', openLib);
 $('libClose').addEventListener('click', closeLib);
 libOverlay.addEventListener('click', function (e) { if (e.target === libOverlay) closeLib(); });
 readBtn.addEventListener('click', function () { loadBook(bookInput.value); });
-bookInput.addEventListener('keydown', function (e) {
-  if (e.key === 'Enter') { e.preventDefault(); loadBook(bookInput.value); }
+bookInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); loadBook(bookInput.value); } });
+
+/* 手機返回鍵：在書中按返回 → 回到書目 */
+window.addEventListener('popstate', function () {
+  var wasOpen = overlay.classList.contains('open') || libOverlay.classList.contains('open');
+  closeMenu(); closeLib();
+  if (body.getAttribute('data-view') === 'book') { saveNow(); showList(); }
+  else if (wasOpen) { /* 已關閉彈窗 */ }
 });
 
-/* ===== 搜尋 ===== */
-var marks = [], idx = -1, searched = false;
-function esc(s) {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
+/* ===== 搜尋（只在可見段落上標示，大檔案也不卡） ===== */
+var hits = [], byChunk = {}, cur = -1, sv = 0, paintedList = [], composing = false;
+function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 function openSearch() {
   if (!currentBook) return;
   sbar.classList.add('open');
   setTimeout(function () { try { sInput.focus({ preventScroll: true }); } catch (e) { sInput.focus(); } sInput.select(); }, 30);
 }
-function clearMarks() {
-  if (searched && currentBook) {
-    var r = ratio();
-    bookContent.textContent = rawText;
-    restoreRatio(r);
+function clearSearch() {
+  for (var i = 0; i < paintedList.length; i++) {
+    var c = paintedList[i];
+    if (els[c]) { els[c].textContent = chunks[c]; els[c].pv = 0; }
   }
-  searched = false; marks = []; idx = -1; sCount.textContent = '';
+  paintedList = []; hits = []; byChunk = {}; cur = -1; sv++; sCount.textContent = '';
 }
-function closeSearch() {
-  sbar.classList.remove('open');
-  clearMarks();
-  sInput.value = '';
+function closeSearch() { sbar.classList.remove('open'); clearSearch(); sInput.value = ''; }
+function paint(c) {
+  var el = els[c];
+  if (!el || el.pv === sv) return;
+  el.pv = sv;
+  var hs = byChunk[c];
+  if (!hs) return;
+  var t = chunks[c], out = [], last = 0;
+  for (var k = 0; k < hs.length; k++) {
+    var h = hits[hs[k]];
+    out.push(esc(t.slice(last, h.i)), '<mark' + (hs[k] === cur ? ' class="cur"' : '') + '>' + esc(t.substr(h.i, h.l)) + '</mark>');
+    last = h.i + h.l;
+  }
+  out.push(esc(t.slice(last)));
+  el.innerHTML = out.join('');
+  paintedList.push(c);
 }
+function paintNear(c) { for (var i = c - 1; i <= c + 2; i++) paint(i); }
 function runSearch() {
   var q = sInput.value;
-  clearMarks();
+  clearSearch();
   if (!q || !currentBook) return;
   var re = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
-  var parts = [], last = 0, m, n = 0;
-  while ((m = re.exec(rawText)) && n < 5000) {
-    parts.push(esc(rawText.slice(last, m.index)), '<mark>' + esc(m[0]) + '</mark>');
-    last = m.index + m[0].length;
-    n++;
-    if (m[0].length === 0) re.lastIndex++;
+  for (var c = 0; c < chunks.length && hits.length < MAXH; c++) {
+    var t = chunks[c], m, j = 0;
+    re.lastIndex = 0;
+    while ((m = re.exec(t))) {
+      (byChunk[c] || (byChunk[c] = [])).push(hits.length);
+      hits.push({ c: c, i: m.index, l: m[0].length, j: j++ });
+      if (!m[0].length) re.lastIndex++;
+      if (hits.length >= MAXH) break;
+    }
   }
-  if (!n) { sCount.textContent = '找不到'; return; }
-  parts.push(esc(rawText.slice(last)));
-  bookContent.innerHTML = parts.join('');
-  searched = true;
-  marks = Array.prototype.slice.call(bookContent.querySelectorAll('mark'));
+  if (!hits.length) { sCount.textContent = '找不到'; return; }
   go(0);
 }
+function markEl(h) { var el = els[h.c]; return el ? el.getElementsByTagName('mark')[h.j] : null; }
 function go(i) {
-  if (!marks.length) return;
-  if (marks[idx]) marks[idx].className = '';
-  idx = (i + marks.length) % marks.length;
-  var m = marks[idx];
-  m.className = 'cur';
-  try { m.scrollIntoView({ block: 'center' }); } catch (e) { m.scrollIntoView(); }
-  sCount.textContent = (idx + 1) + ' / ' + marks.length + (marks.length >= 5000 ? '+' : '');
+  if (!hits.length) return;
+  var old = hits[cur], m;
+  if (old) { m = markEl(old); if (m) m.className = ''; }
+  cur = (i + hits.length) % hits.length;
+  var h = hits[cur];
+  if (h.c >= rendered) renderTo(h.c + 3, 0);
+  sv++; /* 讓已標示的段落可重新標示（更新目前項） */
+  for (var k = 0; k < paintedList.length; k++) { var pe = els[paintedList[k]]; if (pe) pe.pv = 0; }
+  paintNear(h.c);
+  m = markEl(h);
+  if (m) { try { m.scrollIntoView({ block: 'center' }); } catch (e) { m.scrollIntoView(); } }
+  sCount.textContent = (cur + 1) + ' / ' + hits.length + (hits.length >= MAXH ? '+' : '');
 }
 var st;
-sInput.addEventListener('input', function () { clearTimeout(st); st = setTimeout(runSearch, 300); });
+sInput.addEventListener('compositionstart', function () { composing = true; });
+sInput.addEventListener('compositionend', function () { composing = false; clearTimeout(st); st = setTimeout(runSearch, 200); });
+sInput.addEventListener('input', function () { if (composing) return; clearTimeout(st); st = setTimeout(runSearch, 350); });
 sInput.addEventListener('keydown', function (e) {
   if (e.key !== 'Enter') return;
-  e.preventDefault();
-  clearTimeout(st);
-  if (!searched || sInput.value === '') runSearch();
-  else go(e.shiftKey ? idx - 1 : idx + 1);
+  e.preventDefault(); clearTimeout(st);
+  if (!hits.length || sInput.value === '') runSearch(); else go(e.shiftKey ? cur - 1 : cur + 1);
 });
-$('searchBtn').addEventListener('click', function () {
-  if (sbar.classList.contains('open')) closeSearch(); else openSearch();
-});
-$('sNext').addEventListener('click', function () { if (!searched) runSearch(); else go(idx + 1); });
-$('sPrev').addEventListener('click', function () { if (!searched) runSearch(); else go(idx - 1); });
+$('searchBtn').addEventListener('click', function () { if (sbar.classList.contains('open')) closeSearch(); else openSearch(); });
+$('sNext').addEventListener('click', function () { if (!hits.length) runSearch(); else go(cur + 1); });
+$('sPrev').addEventListener('click', function () { if (!hits.length) runSearch(); else go(cur - 1); });
 $('sClose').addEventListener('click', closeSearch);
 
-/* ===== 捲動：進度、回頂部、自動收起頂欄、記住位置 ===== */
-var lastY = 0, tick = false, saveT;
+/* ===== 捲動：進度、回頂部、收起頂欄、記住位置 ===== */
+var lastY = 0, tick = false, progT = 0, saveT = 0;
 function onScroll() {
-  var y = window.pageYOffset || root.scrollTop || 0;
-  var r = ratio();
-  $('bar').style.webkitTransform = 'scaleX(' + (document.body.getAttribute('data-view') === 'book' ? r : 0) + ')';
-  $('bar').style.transform = 'scaleX(' + (document.body.getAttribute('data-view') === 'book' ? r : 0) + ')';
-  if (y > 600) $('topBtn').className = 'fab show';
-  else $('topBtn').className = 'fab';
+  var y = scrollTop();
+  topBtn.className = y > 600 ? 'fab show' : 'fab';
   if (!sbar.classList.contains('open')) {
     if (y > lastY + 6 && y > 120) topBar.classList.add('hide');
     else if (y < lastY - 6) topBar.classList.remove('hide');
   }
   lastY = y;
-  if (currentBook) {
-    $('pct').textContent = Math.round(r * 100) + '%';
-    clearTimeout(saveT);
-    saveT = setTimeout(function () { LS.set('ytr:pos:' + currentBook, r); }, 400);
-  }
+  if (currentBook && !progT) progT = setTimeout(updateProgress, 150);
+}
+function updateProgress() {
+  progT = 0;
+  if (!currentBook || !els.length) return;
+  var a = anchor(), p = (a.c + a.r) / chunks.length;
+  if (rendered >= chunks.length && scrollTop() + window.innerHeight >= root.scrollHeight - 4) p = 1;
+  lastA = a;
+  bar.style.transform = 'scaleX(' + p + ')';
+  pct.textContent = Math.round(p * 100) + '%';
+  if (hits.length) paintNear(a.c);
+  clearTimeout(saveT); saveT = setTimeout(saveNow, 500);
+}
+function saveNow() {
+  if (currentBook && lastA) LS.set('ytr:pos:' + currentBook, { c: lastA.c, r: lastA.r, n: chunks.length, p: (lastA.c + lastA.r) / chunks.length });
 }
 window.addEventListener('scroll', function () {
   if (tick) return;
   tick = true;
   requestAnimationFrame(function () { tick = false; onScroll(); });
 }, { passive: true });
-
-$('topBtn').addEventListener('click', function () {
-  if ('scrollBehavior' in document.documentElement.style) {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  } else {
-    window.scrollTo(0, 0);
-  }
+topBtn.addEventListener('click', function () {
+  if ('scrollBehavior' in root.style) window.scrollTo({ top: 0, behavior: 'smooth' }); else window.scrollTo(0, 0);
+});
+window.addEventListener('pagehide', saveNow);
+document.addEventListener('visibilitychange', function () { if (document.hidden) saveNow(); });
+var rsT, lastW = window.innerWidth;
+window.addEventListener('resize', function () {
+  clearTimeout(rsT);
+  rsT = setTimeout(function () {
+    if (window.innerWidth !== lastW) { lastW = window.innerWidth; if (currentBook && lastA) restoreAnchor(lastA); }
+  }, 200);
 });
 
 /* ===== 鍵盤 ===== */
@@ -801,7 +751,7 @@ window.addEventListener('keydown', function (e) {
 });
 
 /* ===== 啟動 ===== */
-applyAll();
+applyColors(); applyType(); syncUI();
 loadBookListFromCSV();
 })();
 </script>
