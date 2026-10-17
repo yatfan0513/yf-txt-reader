@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#FFFFFF" id="themeColor" />
 <title>小說閱讀器</title>
+<!-- 網路字體：Noto Serif/Sans TC & SC + 英文字體 -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&family=Noto+Serif+SC:wght@400;700&family=Noto+Sans+TC:wght@400;700&family=Noto+Sans+SC:wght@400;700&family=Georgia&display=swap" rel="stylesheet" />
 <style>
 /* 相容 Chrome 78 WebView：不使用 flex gap / min() / max() / clamp() / color-mix / inset */
 :root{
@@ -12,11 +16,17 @@
   --ff:"Noto Serif","Source Serif Pro",Georgia,"Times New Roman","Noto Serif TC","Noto Serif HK","Source Han Serif TC","Songti TC","PMingLiU","MingLiU","Noto Serif SC","Source Han Serif SC","Songti SC","SimSun",serif;
   --ui:-apple-system,"Roboto","Helvetica Neue",Arial,"Noto Sans TC","Noto Sans HK","PingFang HK","PingFang TC","Microsoft JhengHei","Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;
   --mute:#7C7E82;--line:#E0E1E3;--soft:#F0F0F1;--bg-rgb:255,255,255;--tbh:52px;
+  --ff-tc:"Noto Serif TC","PMingLiU","MingLiU","Microsoft JhengHei","Source Han Serif TC","Songti TC",serif;
+  --ff-sc:"Noto Serif SC","SimSun","Source Han Serif SC","Songti SC","Microsoft YaHei",serif;
+  --ff-en:"Georgia","Times New Roman","Noto Serif",serif;
+  --ff-tc-sans:"Noto Sans TC","Microsoft JhengHei","PingFang TC","Source Han Sans TC",sans-serif;
+  --ff-sc-sans:"Noto Sans SC","Microsoft YaHei","PingFang SC","Source Han Sans SC",sans-serif;
+  --ff-en-sans:"Arial","Helvetica","Noto Sans",sans-serif;
 }
 html{background:var(--bg);scroll-padding-top:calc(var(--tbh) + 70px)}
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:var(--bg);color:var(--fg);font-family:var(--ui);min-height:100vh;overflow-anchor:none;
-  transition:background .25s,color .25s;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
+  transition:background .25s,color .25s;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
 button,input{font:inherit;color:inherit}
 button{cursor:pointer;background:none;border:0;touch-action:manipulation}
 [hidden]{display:none!important}
@@ -47,10 +57,18 @@ body[data-view=list] .bookonly{display:none}
 /* 正文：左右留白由「頁邊距」控制 */
 main{width:100%;margin:0 auto;padding:calc(var(--tbh) + 32px) var(--pad) 160px}
 body[data-view=list] main{max-width:840px;padding-left:22px;padding-right:22px;padding-top:calc(var(--tbh) + 20px)}
-#bookContent{font-family:var(--ff);font-size:var(--fs);line-height:var(--lh);white-space:pre-wrap;word-break:break-word;overflow-wrap:break-word}
+#bookContent{font-family:var(--ff);font-size:var(--fs);line-height:var(--lh);white-space:pre-wrap;word-break:break-word;overflow-wrap:break-word;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+/* 依語言設定字體優先順序，避免繁簡混排；依明體/黑體模式切換 serif/sans-serif 字體棧 */
+body.font-serif #bookContent[lang="zh-Hant"]{font-family:var(--ff-tc)}
+body.font-serif #bookContent[lang="zh-Hans"]{font-family:var(--ff-sc)}
+body.font-serif #bookContent[lang="en"]{font-family:var(--ff-en)}
+body.font-sans #bookContent[lang="zh-Hant"]{font-family:var(--ff-tc-sans)}
+body.font-sans #bookContent[lang="zh-Hans"]{font-family:var(--ff-sc-sans)}
+body.font-sans #bookContent[lang="en"]{font-family:var(--ff-en-sans)}
 mark{background:#FFD54A;color:#111;border-radius:3px;padding:0 1px}
 mark.cur{background:#FF9F1A;outline:2px solid #FF9F1A}
 .note{font-family:var(--ui);white-space:normal;text-align:center;color:var(--mute);font-size:16px;line-height:1.8;padding:80px 0}
+#langHint{padding:8px 0;font-size:13px;color:var(--mute);text-align:center;border-top:1px solid var(--line)}
 .note.err{color:#D0314E}
 
 /* 書目 */
@@ -126,7 +144,7 @@ input[type=range]{flex:1;min-width:0;height:32px;background:none}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
-<body data-view="list">
+<body class="font-serif" data-view="list">
 
 <header id="top">
   <div id="topTitle">書目</div>
@@ -163,6 +181,9 @@ input[type=range]{flex:1;min-width:0;height:32px;background:none}
       <button type="button" data-ff="serif" style="font-family:var(--ff)">明體</button>
       <button type="button" data-ff="sans" style="font-family:var(--ui)">黑體</button>
     </div></div>
+    <div class="row" id="langHint" style="display:none;font-size:13px;color:var(--mute);text-align:center">
+      目前語言：<span id="currentLang"></span>
+    </div>
     <div class="row">
       <div class="pre" id="presets"></div>
       <div class="cl"><span>背景</span><input class="hex" id="bgHex" maxlength="7" placeholder="#FFFFFF" spellcheck="false" autocomplete="off" aria-label="背景色碼" /></div>
@@ -222,7 +243,14 @@ function normalizeHex(v) {
 /* ===== 閱讀偏好：預設值依裝置自動決定，只儲存使用者改過的項目 ===== */
 var FONTS = {
   serif: '"Noto Serif","Source Serif Pro",Georgia,"Times New Roman","Noto Serif TC","Noto Serif HK","Source Han Serif TC","Songti TC","PMingLiU","MingLiU","Noto Serif SC","Source Han Serif SC","Songti SC","SimSun",serif',
-  sans: '"Roboto","Helvetica Neue",Arial,"Noto Sans TC","Noto Sans HK","PingFang HK","PingFang TC","Microsoft JhengHei","Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif'
+  sans: '"Roboto","Helvetica Neue",Arial,"Noto Sans TC","Noto Sans HK","PingFang HK","PingFang TC","Microsoft JhengHei","Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif',
+  /* 語言專屬字體棧 */
+  'serif-zh-Hant': '"Noto Serif TC","PMingLiU","MingLiU","Microsoft JhengHei","Source Han Serif TC","Songti TC",serif',
+  'serif-zh-Hans': '"Noto Serif SC","SimSun","Source Han Serif SC","Songti SC","Microsoft YaHei",serif',
+  'serif-en': '"Georgia","Times New Roman","Noto Serif",serif',
+  'sans-zh-Hant': '"Noto Sans TC","Microsoft JhengHei","PingFang TC","Source Han Sans TC",sans-serif',
+  'sans-zh-Hans': '"Noto Sans SC","Microsoft YaHei","PingFang SC","Source Han Sans SC",sans-serif',
+  'sans-en': '"Arial","Helvetica","Noto Sans",sans-serif'
 };
 var PRESETS = [
   { n: '白紙', bg: '#FFFFFF', fg: '#1B1D21' }, { n: '米黃', bg: '#F4ECD8', fg: '#3B3226' },
@@ -279,6 +307,9 @@ function applyType() {
   var st = root.style;
   st.setProperty('--fs', S.fs + 'px'); st.setProperty('--lh', S.lh);
   st.setProperty('--pad', S.pad + 'px'); st.setProperty('--ff', FONTS[S.ff] || FONTS.serif);
+  /* 同步更新 body 字體模式類別，讓語言專屬 CSS 規則正確切換 serif/sans-serif */
+  body.classList.remove('font-serif', 'font-sans');
+  body.classList.add('font-' + (S.ff || 'serif'));
 }
 
 /* 建立 字號／行距／頁邊距：滑桿 + 直接輸入 + 數值顯示 */
@@ -361,7 +392,13 @@ hexInput('bgHex', 'bg'); hexInput('fgHex', 'fg');
 $('ffSeg').addEventListener('click', function (e) {
   var b = e.target;
   while (b && b !== this && !b.getAttribute('data-ff')) b = b.parentNode;
-  if (b && b.getAttribute && b.getAttribute('data-ff')) { U.ff = S.ff = b.getAttribute('data-ff'); typeChanged(); }
+  if (b && b.getAttribute && b.getAttribute('data-ff')) {
+    U.ff = S.ff = b.getAttribute('data-ff');
+    /* 立即切換 body 類別，讓 CSS 規則即時生效（不等待 applyType 的 140ms setTimeout） */
+    body.classList.remove('font-serif', 'font-sans');
+    body.classList.add('font-' + S.ff);
+    typeChanged();
+  }
 });
 $('resetBtn').addEventListener('click', function () {
   for (var k in U) delete U[k];
@@ -454,6 +491,22 @@ function startBook(name, text) {
   chunks = splitText(text.replace(/\r\n?/g, '\n')); els = []; rendered = 0; lastA = null;
   bookContent.innerHTML = '';
   currentBook = name; topTitle.textContent = name;
+  // 設定語言屬性，讓 CSS 套用正確的字體棧
+  var lang = bookLangMap[name] || '';
+  if (!lang) {
+    // 若 booklist 未標註語言，自動偵測
+    lang = detectLangFromText(text);
+    bookLangMap[name] = lang;
+  }
+  bookContent.setAttribute('lang', lang);
+  // 更新語言提示
+  var lh = $('currentLang');
+  if (lh) {
+    var langLabel = lang === 'zh-Hant' ? '繁體中文' : (lang === 'zh-Hans' ? '簡體中文' : (lang === 'en' ? 'English' : lang));
+    lh.textContent = langLabel;
+  }
+  var lhint = $('langHint');
+  if (lhint && lang) lhint.style.display = 'block';
   var sv = LS.get('ytr:pos:' + name, null), a = null, N = chunks.length;
   if (sv && typeof sv === 'object' && sv.n === N) a = { c: Math.min(N - 1, sv.c), r: sv.r };
   else if (sv != null) {
@@ -486,7 +539,9 @@ function renderBookList(books) {
   var last = LS.get('ytr:last', '');
   if (last && books.indexOf(last) >= 0) {
     var cb = document.createElement('button');
-    cb.type = 'button'; cb.className = 'cont'; cb.textContent = '繼續：' + last;
+    cb.type = 'button'; cb.className = 'cont'; 
+    var langTag = bookLangMap[last] ? ' [' + bookLangMap[last] + ']' : '';
+    cb.textContent = '繼續：' + last + langTag;
     cb.onclick = function () { bookInput.value = last; loadBook(last); };
     bookContent.appendChild(cb);
   }
@@ -537,6 +592,51 @@ function loadBook(bookName) {
       showError('網絡錯誤，請稍後再試');
     });
 }
+/* ===== 語言偵測 ===== */
+function detectLangFromText(text) {
+  // 取前2000字做判斷
+  var sample = text.slice(0, 2000);
+  // 簡體特徵字集合
+  
+  // 更可靠的簡體特徵字
+  
+  // 繁體特有字
+  
+  
+  // 用更精確的方式判斷
+  
+  var simpCount = 0, tradCount = 0;
+  for (var i = 0; i < sample.length; i++) {
+    var c = sample.charAt(i);
+    // 簡體特徵字
+    if ('书时与发电务动员个' .indexOf(c) >= 0) simpCount++;
+    // 繁體特徵字  
+    if ('個麼裡為會說雲電務動員' .indexOf(c) >= 0) tradCount++;
+  }
+  
+  if (simpCount > tradCount && simpCount > 2) return 'zh-Hans';
+  if (tradCount > simpCount && tradCount > 2) return 'zh-Hant';
+  
+  // 如果都沒判出來，檢查是否有大量中文
+  var cnChars = sample.match(/[一-鿿]/g);
+  if (cnChars && cnChars.length > 10) {
+    // 預設繁體（因為使用者可能用繁體系統）
+    return 'zh-Hant';
+  }
+  return 'en';
+}
+
+function normalizeLang(lang) {
+  if (!lang) return '';
+  var l = lang.trim().toLowerCase();
+  if (/^(zh-hant|zh_tw|zh-hk|繁體中文|繁體|traditional)/.test(l)) return 'zh-Hant';
+  if (/^(zh-hans|zh_cn|简体中文|简体|simplified)/.test(l)) return 'zh-Hans';
+  if (/^(en|english|英文)/.test(l)) return 'en';
+  return l;
+}
+
+var bookLangMap = {}; // 書名 -> 語言
+
 function loadBookListFromCSV() {
   setView('list'); topTitle.textContent = '書目';
   fetch('content/booklist.csv', { method: 'GET' })
@@ -547,15 +647,29 @@ function loadBookListFromCSV() {
     .then(function (csv) {
       if (csv == null) return;
       var lines = csv.split(/\r?\n/).map(function (l) { return l.trim(); }).filter(function (l) { return l.length > 0; });
-      var books = lines;
+      var bookNames = [];
+      var hasHeader = false;
       if (lines.length > 0) {
         var f = lines[0].toLowerCase();
-        if (f.indexOf('書名') >= 0 || f.indexOf('书名') >= 0 || f.indexOf('book') >= 0 || f.indexOf('名稱') >= 0 || f.indexOf('名称') >= 0 || f.indexOf('name') >= 0) books = lines.slice(1);
+        if (f.indexOf('書名') >= 0 || f.indexOf('书名') >= 0 || f.indexOf('book') >= 0 || f.indexOf('名稱') >= 0 || f.indexOf('名称') >= 0 || f.indexOf('name') >= 0) {
+          hasHeader = true;
+          lines = lines.slice(1);
+        }
       }
-      books = books.filter(function (n) { return n.length > 0; });
-      bookListData = books;
-      if (!books.length) note('書單是空的');
-      else renderBookList(books);
+      // 解析「名稱,語言」兩欄格式
+      lines.forEach(function (line) {
+        var parts = line.split(',');
+        var name = parts[0].trim();
+        var lang = parts[1] ? parts[1].trim() : '';
+        if (name.length > 0) {
+          bookNames.push(name);
+          var normalized = normalizeLang(lang);
+          if (normalized) bookLangMap[name] = normalized;
+        }
+      });
+      bookListData = bookNames;
+      if (!bookNames.length) note('書單是空的');
+      else renderBookList(bookNames);
     })
     .catch(function (err) {
       if (window.console && console.error) console.error(err);
@@ -577,7 +691,14 @@ function closeLib() { libOverlay.classList.remove('open'); unlockScroll(); }
 $('libBtn').addEventListener('click', openLib);
 $('libClose').addEventListener('click', closeLib);
 libOverlay.addEventListener('click', function (e) { if (e.target === libOverlay) closeLib(); });
-readBtn.addEventListener('click', function () { loadBook(bookInput.value); });
+readBtn.addEventListener('click', function () { 
+  var name = bookInput.value.trim();
+  // 如果手動輸入書名且未在 booklist 中定義語言，自動偵測
+  if (name && !bookLangMap[name]) {
+    // 先載入再偵測（第一次載入時 startBook 已處理）
+  }
+  loadBook(bookInput.value); 
+});
 bookInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); loadBook(bookInput.value); } });
 
 /* 手機返回鍵：在書中按返回 → 回到書目 */
