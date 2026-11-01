@@ -1,0 +1,441 @@
+
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wikipedia 轉 TXT</title>
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;padding:18px;background:#f3f4f6;color:#222;
+  font-family:system-ui,-apple-system,"Noto Sans TC",
+  "Microsoft JhengHei",sans-serif;line-height:1.7
+}
+.container{
+  max-width:850px;margin:auto;padding:22px;background:#fff;
+  border-radius:12px;box-shadow:0 2px 12px #0000000c
+}
+h1{font-size:23px;margin:0 0 8px}
+.desc{font-size:14px;color:#666;margin:0 0 20px}
+label{display:block;margin:14px 0 6px;font-size:14px;font-weight:600}
+input,select,button{
+  width:100%;min-height:44px;padding:10px 12px;
+  border:1px solid #ccc;border-radius:7px;
+  background:#fff;color:#222;font-size:15px
+}
+button{
+  margin-top:13px;border:0;background:#2457a7;
+  color:white;font-weight:600;cursor:pointer
+}
+button:disabled{opacity:.5;cursor:not-allowed}
+.secondary{background:#555}
+.status{
+  margin-top:14px;padding:10px 12px;border-radius:7px;
+  background:#f1f3f5;color:#444;font-size:14px;white-space:pre-wrap
+}
+.error{background:#fff0f0;color:#b42318}
+.success{background:#edf8f0;color:#176b35}
+.options{display:flex;align-items:center;gap:9px;margin-top:13px}
+.options input{width:18px;height:18px;min-height:auto;margin:0}
+.options label{margin:0;font-weight:normal}
+textarea{
+  width:100%;min-height:300px;padding:12px;
+  border:1px solid #ddd;border-radius:7px;resize:vertical;
+  font-family:monospace;font-size:13px;line-height:1.65
+}
+.small{font-size:12px;color:#777;margin-top:12px}
+@media(max-width:600px){
+  body{padding:10px}
+  .container{padding:16px}
+  h1{font-size:20px}
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Wikipedia 轉 TXT</h1>
+  <p class="desc">提取條目正文，保留章節結構並整理排版。</p>
+
+  <label for="source">Wikipedia 網址或條目名稱</label>
+  <input id="source" placeholder="例如：光緒帝 或 Wikipedia 條目網址">
+
+  <label for="language">語言版本</label>
+  <select id="language">
+    <option value="zh">中文 Wikipedia</option>
+    <option value="en">英文 Wikipedia</option>
+    <option value="ja">日文 Wikipedia</option>
+    <option value="fr">法文 Wikipedia</option>
+    <option value="de">德文 Wikipedia</option>
+    <option value="es">西班牙文 Wikipedia</option>
+  </select>
+
+  <div class="options">
+    <input type="checkbox" id="separator" checked>
+    <label for="separator">主要章節之間加入分隔線</label>
+  </div>
+
+  <button id="convert" onclick="convertArticle()">開始轉換</button>
+  <button id="download" class="secondary" onclick="downloadTxt()" disabled>
+    下載 TXT
+  </button>
+
+  <div id="status" class="status">等待輸入條目。</div>
+
+  <label for="output">文字預覽</label>
+  <textarea id="output" readonly placeholder="轉換後的內容會顯示在這裏。"></textarea>
+
+  <div class="small">需要網絡連線。使用 Wikipedia 官方 API。</div>
+</div>
+
+<script>
+let finalText = "";
+let articleTitle = "";
+
+const $ = id => document.getElementById(id);
+
+function setStatus(message,type=""){
+  $("status").textContent=message;
+  $("status").className="status "+type;
+}
+
+function decodeTitle(value){
+  try{return decodeURIComponent(value.replace(/\+/g," "))}
+  catch{return value}
+}
+
+function parseInput(input){
+  input=input.trim();
+  if(!input) throw new Error("請輸入條目名稱或網址。");
+
+  if(/^https?:\/\//i.test(input)){
+    const url=new URL(input);
+    if(!url.hostname.endsWith("wikipedia.org"))
+      throw new Error("請輸入 Wikipedia 網址。");
+
+    const host=url.hostname.match(/^([a-z-]+)\.wikipedia\.org$/i);
+    const language=host?host[1].split("-")[0]:"zh";
+    let title="";
+
+    if(url.pathname.includes("/wiki/")){
+      title=url.pathname.split("/wiki/")[1];
+    }else if(url.searchParams.has("title")){
+      title=url.searchParams.get("title");
+    }else{
+      const parts=url.pathname.split("/").filter(Boolean);
+      if(parts.length>=2) title=parts.slice(1).join("/");
+    }
+
+    title=decodeTitle((title||"").split("#")[0]);
+    if(!title) throw new Error("無法識別網址中的條目名稱。");
+    return {language,title};
+  }
+
+  return {language:$("language").value,title:input};
+}
+
+/* 移除引用標記、編輯按鈕及不需要的內容 */
+function removeUnwanted(root){
+  root.querySelectorAll([
+    "sup.reference",
+    ".reference",
+    ".mw-cite-backlink",
+    ".mw-editsection",
+    ".mw-references-wrap",
+    ".reflist",
+    ".references",
+    ".navbox",
+    ".vertical-navbox",
+    ".catlinks",
+    ".toc",
+    ".sistersitebox",
+    ".portal",
+    ".metadata",
+    ".noprint",
+    ".printfooter",
+    ".gallery",
+    ".thumb",
+    ".hatnote",
+    ".ambox",
+    ".tmbox",
+    ".ombox",
+    ".fmbox",
+    ".imbox",
+    "script",
+    "style"
+  ].join(",")).forEach(el=>el.remove());
+
+  /* 移除圖片，保留圖片說明文字 */
+  root.querySelectorAll("img").forEach(el=>el.remove());
+
+  /* 移除外部連結網址，只保留連結文字 */
+  root.querySelectorAll("a").forEach(a=>{
+    a.replaceWith(...a.childNodes);
+  });
+}
+
+/* 提取乾淨的行內文字 */
+function cleanInline(element){
+  const clone=element.cloneNode(true);
+
+  clone.querySelectorAll([
+    "sup.reference",
+    ".reference",
+    ".mw-editsection",
+    ".mw-cite-backlink",
+    "script",
+    "style"
+  ].join(",")).forEach(el=>el.remove());
+
+  clone.querySelectorAll("br").forEach(el=>{
+    el.replaceWith(document.createTextNode("\n"));
+  });
+
+  clone.querySelectorAll("a").forEach(a=>{
+    a.replaceWith(...a.childNodes);
+  });
+
+  return (clone.textContent||"")
+    .replace(/\u00a0/g," ")
+    .replace(/[ \t]+/g," ")
+    .replace(/\s*\n\s*/g,"\n")
+    .trim();
+}
+
+function cleanList(list,depth=0){
+  const ordered=list.tagName.toLowerCase()==="ol";
+  const lines=[];
+  let number=1;
+
+  for(const item of [...list.children]){
+    if(item.tagName.toLowerCase()!=="li") continue;
+
+    const clone=item.cloneNode(true);
+    clone.querySelectorAll("ul,ol").forEach(el=>el.remove());
+
+    const text=cleanInline(clone);
+    if(text){
+      const indent="  ".repeat(depth);
+      const marker=ordered?(number++)+". ":"- ";
+      lines.push(indent+marker+text);
+    }
+
+    for(const nested of [...item.children]){
+      if(nested.tagName==="UL"||nested.tagName==="OL"){
+        lines.push(cleanList(nested,depth+1));
+      }
+    }
+  }
+
+  return lines.join("\n");
+}
+
+function cleanTable(table){
+  const rows=[...table.querySelectorAll("tr")];
+  const output=[];
+
+  for(const row of rows){
+    const cells=[...row.children].filter(el=>
+      el.tagName==="TH"||el.tagName==="TD"
+    );
+    if(!cells.length) continue;
+
+    const values=cells.map(cleanInline).filter(Boolean);
+    if(values.length) output.push(values.join(" ｜ "));
+  }
+
+  return output.length?"表格：\n"+output.join("\n"):"";
+}
+
+function walkContent(root){
+  const blocks=[];
+
+  function walk(node){
+    if(node.nodeType!==Node.ELEMENT_NODE) return;
+
+    const tag=node.tagName.toLowerCase();
+
+    if(node.matches([
+      ".navbox",".vertical-navbox",".catlinks",".toc",
+      ".gallery",".thumb",".metadata",".mw-empty-elt",
+      ".mw-references-wrap",".reflist",".references"
+    ].join(","))) return;
+
+    if(/^h[1-6]$/.test(tag)){
+      const level=Number(tag[1]);
+      if(level===1) return;
+      const text=cleanInline(node);
+      if(text) blocks.push({type:"heading",level,text});
+      return;
+    }
+
+    if(tag==="p"){
+      const text=cleanInline(node);
+      if(text) blocks.push({type:"paragraph",text});
+      return;
+    }
+
+    if(tag==="ul"||tag==="ol"){
+      const text=cleanList(node);
+      if(text) blocks.push({type:"list",text});
+      return;
+    }
+
+    if(tag==="table"){
+      const text=cleanTable(node);
+      if(text) blocks.push({type:"table",text});
+      return;
+    }
+
+    if(tag==="blockquote"){
+      const text=cleanInline(node);
+      if(text){
+        blocks.push({
+          type:"quote",
+          text:text.split("\n").map(line=>"> "+line).join("\n")
+        });
+      }
+      return;
+    }
+
+    if(tag==="pre"){
+      const text=node.textContent.trim();
+      if(text) blocks.push({type:"pre",text});
+      return;
+    }
+
+    if(tag==="dl"){
+      for(const child of [...node.children]){
+        const text=cleanInline(child);
+        if(!text) continue;
+        if(child.tagName==="DT"){
+          blocks.push({type:"paragraph",text:"【"+text+"】"});
+        }else{
+          blocks.push({type:"paragraph",text:"  "+text});
+        }
+      }
+      return;
+    }
+
+    for(const child of [...node.children]) walk(child);
+  }
+
+  for(const child of [...root.children]) walk(child);
+  return blocks;
+}
+
+function formatBlocks(title,blocks){
+  const output=["# "+title,""];
+  const useSeparator=$("separator").checked;
+
+  for(const block of blocks){
+    if(block.type==="heading"){
+      if(block.level===2&&useSeparator&&output.length>2){
+        output.push("");
+        output.push("━━━━━━━━━━━━━━━━━━━━");
+      }
+      output.push("");
+      output.push("#".repeat(block.level)+" "+block.text);
+      output.push("");
+      continue;
+    }
+
+    output.push(block.text);
+    output.push("");
+  }
+
+  return output.join("\n")
+    .replace(/\n{3,}/g,"\n\n")
+    .trim()+"\n";
+}
+
+async function convertArticle(){
+  const button=$("convert");
+  $("download").disabled=true;
+  button.disabled=true;
+  $("output").value="";
+  finalText="";
+
+  try{
+    setStatus("正在連接 Wikipedia……");
+
+    const {language,title}=parseInput($("source").value);
+    const api="https://"+language+".wikipedia.org/w/api.php";
+
+    const params=new URLSearchParams({
+      action:"parse",
+      page:title,
+      prop:"text",
+      format:"json",
+      formatversion:"2",
+      origin:"*",
+      disableeditsection:"1",
+      disabletoc:"1",
+      disablelimitreport:"1"
+    });
+
+    const response=await fetch(api+"?"+params.toString());
+    if(!response.ok) throw new Error("API 回應錯誤："+response.status);
+
+    const data=await response.json();
+    if(data.error) throw new Error(data.error.info||"讀取條目失敗。");
+    if(!data.parse||!data.parse.text) throw new Error("找不到條目正文。");
+
+    articleTitle=data.parse.title||title;
+    setStatus("正在整理正文及章節……");
+
+    const parsed=new DOMParser().parseFromString(
+      data.parse.text,"text/html"
+    );
+
+    const root=parsed.querySelector(".mw-parser-output")||parsed.body;
+
+    removeUnwanted(root);
+
+    const blocks=walkContent(root);
+    if(!blocks.length) throw new Error("沒有提取到可用的正文內容。");
+
+    finalText=formatBlocks(articleTitle,blocks);
+    $("output").value=finalText;
+    $("download").disabled=false;
+
+    setStatus(
+      "轉換完成！\n"+
+      "條目："+articleTitle+"\n"+
+      "正文區塊："+blocks.length+"\n"+
+      "字元數："+finalText.length,
+      "success"
+    );
+
+  }catch(error){
+    setStatus("轉換失敗："+error.message,"error");
+  }finally{
+    button.disabled=false;
+  }
+}
+
+function downloadTxt(){
+  if(!finalText) return;
+
+  const blob=new Blob(
+    ["\uFEFF"+finalText],
+    {type:"text/plain;charset=utf-8"}
+  );
+
+  const url=URL.createObjectURL(blob);
+  const link=document.createElement("a");
+
+  const name=(articleTitle||"Wikipedia")
+    .replace(/[\\/:*?"<>|]/g,"_");
+
+  link.href=url;
+  link.download=name+".txt";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+</script>
+</body>
+</html>
